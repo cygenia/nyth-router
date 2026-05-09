@@ -1,18 +1,33 @@
 {
   "name": "bigliner",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
+  "description": "Local-first AI gateway and control plane: 100+ providers, unified API key, smart routing, real-time analytics, and an animated dashboard.",
+  "license": "MIT",
   "type": "module",
+  "workspaces": [
+    "server",
+    "web"
+  ],
   "scripts": {
-    "start": "node server.js"
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "start": "npm run build -w web && npm run start -w server",
+    "test": "npm test -w server",
+    "lint": "npm run lint -w server && npm run lint -w web"
   },
-  "description": "Local-first AI gateway control plane for provider routing, custom API keys, and usage visibility.",
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
   "keywords": [
     "ai-gateway",
     "openai-compatible",
     "anthropic",
-    "api-gateway",
-    "developer-tools"
-  ],
-  "license": "MIT"
+    "router",
+    "control-plane",
+    "developer-tools",
+    "local-first"
+  ]
 }
