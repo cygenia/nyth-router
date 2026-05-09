@@ -15,8 +15,15 @@ export function getDashboardPasswordHash() {
   return row?.value || null;
 }
 
+export const MIN_DASHBOARD_PASSWORD_LENGTH = 15;
+
+export function validateDashboardPassword(plain) {
+  const password = String(plain || '');
+  return password.length >= MIN_DASHBOARD_PASSWORD_LENGTH;
+}
+
 export function setDashboardPassword(plain) {
-  if (!plain) return false;
+  if (!validateDashboardPassword(plain)) return false;
   settingsUpsert.run('dashboard_password_hash', hashPassword(plain), Date.now());
   return true;
 }
@@ -26,7 +33,9 @@ export function ensureDefaultPassword() {
   const existing = getDashboardPasswordHash();
   if (existing) return;
   if (config.password) {
-    setDashboardPassword(config.password);
+    if (!setDashboardPassword(config.password)) {
+      throw new Error('dashboard_password_min_15_chars');
+    }
   }
 }
 

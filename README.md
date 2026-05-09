@@ -231,7 +231,7 @@ Bigliner can run as a Docker Space for demos. Keep real secrets in Space secrets
 Recommended Space variables/secrets:
 
 ```text
-BIGLINER_PASSWORD=<dashboard-password>
+BIGLINER_PASSWORD=<dashboard-password-min-15-characters>
 BIGLINER_MASTER_KEY=<long-random-master-key>
 HOST=0.0.0.0
 PORT=7860

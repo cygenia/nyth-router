@@ -32,7 +32,7 @@ The master key never leaves the machine. If you wipe `server/data/master.key`, a
 - `.env` is in `.gitignore`. **Never** commit it.
 - Use `.env.example` for placeholders (see file).
 - The dashboard only ever displays masked keys (`sk-…abcd`). Re-entering a key replaces it; you cannot view the plaintext after save.
-- Bigliner refuses to log in with `BIGLINER_PASSWORD` empty.
+- Bigliner refuses to seed dashboard access with an empty or short `BIGLINER_PASSWORD`; use at least 15 characters.
 
 ## Prompt-log privacy
 

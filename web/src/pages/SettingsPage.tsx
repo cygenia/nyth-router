@@ -59,6 +59,7 @@ export default function SettingsPage() {
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
     if (pwd.next !== pwd.confirm) { toast.push('Passwords do not match.', 'error'); return; }
+    if (pwd.next.length < 15) { toast.push('Password must be at least 15 characters.', 'error'); return; }
     setBusy(true);
     try {
       await api('/api/auth/password', { method: 'POST', body: JSON.stringify({ currentPassword: pwd.current, newPassword: pwd.next }) });
@@ -184,7 +185,7 @@ export default function SettingsPage() {
 
       <section className="panel p-5">
         <h3 className="font-display text-lg font-semibold text-ink-50">Dashboard password</h3>
-        <p className="text-xs text-ink-300">Set or change the password used to sign into this dashboard.</p>
+        <p className="text-xs text-ink-300">Set or change the password used to sign into this dashboard. Minimum 15 characters.</p>
         <form onSubmit={changePassword} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
             <label className="field-label">Current</label>
@@ -192,7 +193,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="field-label">New</label>
-            <input type="password" className="field-input mt-1" value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} required />
+            <input type="password" className="field-input mt-1" value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} minLength={15} required />
           </div>
           <div>
             <label className="field-label">Confirm</label>

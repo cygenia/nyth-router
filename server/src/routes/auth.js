@@ -3,6 +3,8 @@ import { config } from '../config.js';
 import {
   checkDashboardPassword,
   setDashboardPassword,
+  validateDashboardPassword,
+  MIN_DASHBOARD_PASSWORD_LENGTH,
   createSession,
   deleteSession,
 } from '../services/auth.js';
@@ -15,6 +17,7 @@ router.get('/state', (req, res) => {
     ok: true,
     requiresPassword: !!config.password || !!checkDashboardPassword(''),
     hasPassword: true,
+    minPasswordLength: MIN_DASHBOARD_PASSWORD_LENGTH,
     sessionExpiresMs: config.sessionTtlMs,
   });
 });
@@ -44,8 +47,14 @@ router.post('/logout', (req, res) => {
 });
 
 router.post('/password', requireDashboard, (req, res) => {
-  const next = String(req.body?.password || '');
-  if (next.length < 4) return res.status(400).json({ ok: false, error: 'password_too_short' });
+  const next = String(req.body?.newPassword || req.body?.password || '');
+  if (!validateDashboardPassword(next)) {
+    return res.status(400).json({
+      ok: false,
+      error: 'password_too_short',
+      minLength: MIN_DASHBOARD_PASSWORD_LENGTH,
+    });
+  }
   setDashboardPassword(next);
   res.json({ ok: true });
 });

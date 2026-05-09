@@ -8,7 +8,7 @@ import crypto from 'node:crypto';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bigliner-test-'));
 process.env.BIGLINER_DB_PATH = path.join(tmp, 'test.db');
 process.env.BIGLINER_MASTER_KEY = crypto.randomBytes(32).toString('hex');
-process.env.BIGLINER_PASSWORD = 'test-password';
+process.env.BIGLINER_PASSWORD = 'test-password-15chars';
 process.env.BIGLINER_LOG_RETENTION_DAYS = '0';
 process.env.BIGLINER_PROMPT_LOG_MODE = 'preview';
 

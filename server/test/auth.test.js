@@ -6,14 +6,21 @@ import {
   createSession, touchSession, deleteSession,
   createApp, listApps, issueAppToken, findAppByToken, revokeAppToken,
   listUnifiedKeys, createUnifiedKey, findUnifiedKey, rotateUnifiedKey, revokeUnifiedKey,
+  setDashboardPassword,
 } from '../src/services/auth.js';
 
 ensureDefaultPassword();
 ensureDefaultUnifiedKey();
 
 test('checkDashboardPassword accepts the seeded password', () => {
-  assert.ok(checkDashboardPassword('test-password'));
+  assert.ok(checkDashboardPassword('test-password-15chars'));
   assert.ok(!checkDashboardPassword('not-the-password'));
+});
+
+test('dashboard password requires at least 15 characters', () => {
+  assert.equal(setDashboardPassword('short-password'), false);
+  assert.equal(setDashboardPassword('long-password-15'), true);
+  assert.ok(checkDashboardPassword('long-password-15'));
 });
 
 test('sessions can be created, touched and deleted', () => {
