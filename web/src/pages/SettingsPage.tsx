@@ -9,7 +9,13 @@ const PROMPT_LOG_MODES = [
   { value: 'off', label: 'Off — no prompt content stored' },
   { value: 'metadata', label: 'Metadata only — no preview' },
   { value: 'preview', label: 'Preview — short snippet (default)' },
-  { value: 'full', label: 'Full — keep full content locally' },
+  { value: 'full', label: 'Full — keep full content' },
+];
+
+const TOKEN_SAVER_MODES = [
+  { value: 'safe', label: 'Safe — light compression, safest formatting' },
+  { value: 'balanced', label: 'Balanced — stronger compression for normal use' },
+  { value: 'aggressive', label: 'Aggressive — maximum savings for noisy output' },
 ];
 
 export default function SettingsPage() {
@@ -30,6 +36,11 @@ export default function SettingsPage() {
       requestTimeoutMs: data.values.requestTimeoutMs,
       retryCount: data.values.retryCount,
       theme: data.values.theme,
+      tokenSaverEnabled: data.values.tokenSaverEnabled === 'true',
+      tokenSaverMode: data.values.tokenSaverMode || 'safe',
+      compressToolOutput: data.values.compressToolOutput !== 'false',
+      compressAssistantOutput: data.values.compressAssistantOutput === 'true',
+      maxToolOutputChars: Number(data.values.maxToolOutputChars || 12000),
     });
   }
   useEffect(() => { load(); }, []);
@@ -70,7 +81,7 @@ export default function SettingsPage() {
   return (
     <Page
       title="Settings"
-      description="Configure routing defaults, privacy, retention, and dashboard auth. Everything lives locally."
+      description="Configure routing defaults, privacy, retention, Token Saver, and dashboard auth."
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="panel p-5">
@@ -120,6 +131,49 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
+
+      <section className="panel p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-lg font-semibold text-ink-50">Token Saver</h3>
+            <p className="text-xs text-ink-300">Reduce noisy tool and model payloads before they consume route context.</p>
+          </div>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-ink-100">
+            <input
+              type="checkbox"
+              checked={!!draft.tokenSaverEnabled}
+              onChange={(e) => setDraft({ ...draft, tokenSaverEnabled: e.target.checked })}
+            />
+            Enabled
+          </label>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+          <div>
+            <label className="field-label">Compression mode</label>
+            <select className="field-input mt-1" value={draft.tokenSaverMode || 'safe'} onChange={(e) => setDraft({ ...draft, tokenSaverMode: e.target.value })}>
+              {TOKEN_SAVER_MODES.map((o) => <option key={o.value} value={o.value} className="bg-ink-950">{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Max tool output chars</label>
+            <input type="number" className="field-input mt-1" value={draft.maxToolOutputChars ?? 12000} onChange={(e) => setDraft({ ...draft, maxToolOutputChars: Number(e.target.value || 0) })} />
+          </div>
+          <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-ink-100">
+            <input type="checkbox" checked={draft.compressToolOutput !== false} onChange={(e) => setDraft({ ...draft, compressToolOutput: e.target.checked })} />
+            <span>
+              <span className="block font-medium">Compress tool output</span>
+              <span className="block text-xs text-ink-300">Best for logs, shell output, JSON payloads, and stack traces.</span>
+            </span>
+          </label>
+          <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-ink-100">
+            <input type="checkbox" checked={!!draft.compressAssistantOutput} onChange={(e) => setDraft({ ...draft, compressAssistantOutput: e.target.checked })} />
+            <span>
+              <span className="block font-medium">Compress assistant output</span>
+              <span className="block text-xs text-ink-300">Optional compact mode for long model responses.</span>
+            </span>
+          </label>
+        </div>
+      </section>
 
       <div className="flex justify-end">
         <button onClick={save} disabled={busy} className="btn-primary">

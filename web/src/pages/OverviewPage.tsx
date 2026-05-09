@@ -8,6 +8,13 @@ import { Icons } from '../lib/icons';
 import { api } from '../lib/api';
 import { formatCurrency, formatLatency, formatNumber, relativeTime } from '../lib/format';
 
+const TRAFFIC_RANGES = [
+  { label: '24 hours', days: 1 },
+  { label: '7 days', days: 7 },
+  { label: '14 days', days: 14 },
+  { label: '30 days', days: 30 },
+];
+
 export default function OverviewPage() {
   const [overview, setOverview] = useState<any>(null);
   const [daily, setDaily] = useState<any[]>([]);
@@ -15,6 +22,7 @@ export default function OverviewPage() {
   const [providers, setProviders] = useState<any[]>([]);
   const [routes, setRoutes] = useState<any[]>([]);
   const [fallbacks, setFallbacks] = useState<any[]>([]);
+  const [trafficDays, setTrafficDays] = useState(14);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +32,7 @@ export default function OverviewPage() {
       try {
         const [ov, dy, ins, pv, rt, fb] = await Promise.all([
           api<any>('/api/usage/overview'),
-          api<any>('/api/usage/daily?days=14'),
+          api<any>(`/api/usage/daily?days=${trafficDays}`),
           api<any>('/api/usage/insights'),
           api<any>('/api/providers'),
           api<any>('/api/routes'),
@@ -44,7 +52,7 @@ export default function OverviewPage() {
     load();
     const id = setInterval(load, 15000);
     return () => { cancelled = true; clearInterval(id); };
-  }, []);
+  }, [trafficDays]);
 
   const enabledProviders = providers.filter((p) => p.enabled).length;
   const implementedProviders = providers.filter((p) => p.status === 'implemented').length;
@@ -97,10 +105,20 @@ export default function OverviewPage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-display text-lg font-semibold text-ink-50">Traffic, last 14 days</h3>
+              <h3 className="font-display text-lg font-semibold text-ink-50">Traffic</h3>
               <p className="text-xs text-ink-300">Requests routed through Bigliner across all providers.</p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-ink-300">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-300">
+              <select
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-ink-100 outline-none transition focus:border-aurora-violet/50"
+                value={trafficDays}
+                onChange={(e) => setTrafficDays(Number(e.target.value))}
+                aria-label="Traffic range"
+              >
+                {TRAFFIC_RANGES.map((range) => (
+                  <option key={range.days} value={range.days} className="bg-ink-950">Last {range.label}</option>
+                ))}
+              </select>
               <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-aurora-violet" />requests</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-aurora-mint" />tokens</span>
             </div>

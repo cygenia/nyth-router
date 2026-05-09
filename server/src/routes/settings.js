@@ -39,6 +39,7 @@ router.get('/', (req, res) => {
   res.json({
     ok: true,
     settings: merged,
+    values: merged,
     runtime: {
       host: config.host,
       port: config.port,
@@ -51,11 +52,11 @@ router.get('/', (req, res) => {
 
 router.put('/', (req, res) => {
   const payload = req.body || {};
+  const values = payload.values && typeof payload.values === 'object' ? payload.values : payload;
   const tx = db.transaction(() => {
-    for (const [key, value] of Object.entries(payload)) {
-      if (typeof value === 'string') {
-        upsertSetting.run(key, value, Date.now());
-      }
+    for (const [key, value] of Object.entries(values)) {
+      if (value === undefined || value === null) continue;
+      upsertSetting.run(key, String(value), Date.now());
     }
   });
   tx();
