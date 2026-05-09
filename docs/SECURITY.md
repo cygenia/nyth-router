@@ -1,6 +1,6 @@
 # Security
 
-Bigliner is a **local-first** tool. The server binds to `localhost` by default, never phones home, and all secrets stay in a local SQLite database.
+Bigliner is designed for private deployments. By default, the server binds to `127.0.0.1`, does not include telemetry, and stores secrets in an encrypted SQLite-backed vault.
 
 ## Threat model
 

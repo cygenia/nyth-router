@@ -1,13 +1,13 @@
 # Bigliner
 
-**AI gateway for multi-provider routing.** Bigliner sits between your apps and 100+ AI providers, gives you one unified API key, smart routing with fallback, real-time analytics, an OAuth-style flow for granting apps access, and an animated dashboard to manage everything.
+Bigliner is an AI gateway for routing requests across multiple model providers with unified authentication, fallback routing, usage analytics, and operational visibility.
 
-> One key for your apps. Many providers under the hood. Clear routing, usage, and cost visibility.
+It gives teams one application-facing API surface while provider keys, route policies, logs, and cost controls are managed from a single dashboard.
 
 ```
 ┌──────────┐    bl_********   ┌──────────────┐    provider keys    ┌────────────┐
-│  Your    │ ───────────────► │   Bigliner   │ ───────────────────►│  OpenAI    │
-│  Apps    │                  │  AI Gateway  │                     │  Anthropic │
+│  Apps    │ ───────────────► │   Bigliner   │ ───────────────────►│  OpenAI    │
+│ Services │                  │  AI Gateway  │                     │  Anthropic │
 └──────────┘                  └──────────────┘                     │  Gemini    │
                                   ▲   ▲                            │  Groq      │
                               dashboard │                          │  Mistral   │
@@ -16,43 +16,61 @@
                                                                    └────────────┘
 ```
 
-## Features
+## Highlights
 
-- **100+ providers / 175+ models** — registry of cloud, aggregator, serverless, local-runtime, embedding, image and audio providers, captured as of May 2026 (GPT-5.5, Claude Opus 4.7, Gemini 3.0, Llama 4, etc.).
-- **Real OpenAI-compatible gateway** at `/v1/chat/completions` with prefix routing (`openai:gpt-5.5`), aliases (`bigliner-cheap`), default routes, and a fallback chain.
-- **Anthropic adapter** that translates OpenAI-style chat requests to/from Anthropic's `messages` API.
-- **Unified Bigliner API keys** (`bl_…`) that external apps can use without ever seeing your provider keys.
-- **OAuth-style local app authorization** with client_id / client_secret, scopes, redirect URIs, token issuance & revocation.
-- **Encrypted key vault** — provider keys are AES-256-GCM encrypted at rest using a master secret stored locally.
-- **Persistent SQLite store** for providers, keys, routes, apps, tokens, request logs, and daily aggregates.
-- **Analytics**: requests, tokens, cost, latency p50/p95/p99, fallback events, top expensive prompts, repeated prompt detector, "could be cheaper" simulator.
-- **Token Saver**: configurable compression for verbose tool outputs and optional assistant outputs, powered by deterministic text compression.
-- **Animated React dashboard** with aurora background, glass cards, live indicators, route simulator, playground, and dark glass UI.
-- **Configurable privacy** — prompt logging is `preview`-only by default and can be set to `off`, `metadata`, or `full`.
+- Multi-provider routing: manage OpenAI-compatible and Anthropic-compatible traffic from one gateway.
+- Unified API keys: issue scoped `bl_…` keys for applications without exposing provider credentials.
+- Route builder: configure prefix routes, aliases, default routes, fallback chains, and model selection rules.
+- Provider registry: 100+ providers and 175+ models with capability, category, and status metadata.
+- Usage analytics: requests, tokens, estimated cost, latency percentiles, fallback events, expensive prompts, and repeated prompt detection.
+- Token Saver: optional compression for verbose tool outputs and assistant outputs with configurable safety modes.
+- Playground: test prompts, inspect route decisions, generate cURL examples, and compare estimated cost.
+- OAuth-style app authorization: register apps, approve scopes, issue tokens, revoke access, and rotate client secrets.
+- Encrypted key vault: provider keys are encrypted at rest with AES-256-GCM using a deployment master key.
+- Privacy controls: prompt logging can be set to `off`, `metadata`, `preview`, or `full`.
+- Dashboard: React interface with provider management, routes, logs, API keys, auth JSON import/export, settings, and operational charts.
 
 ## Quick start
 
 ```bash
 cp .env.example .env
-# Edit .env and set BIGLINER_PASSWORD
+# Edit .env and set BIGLINER_PASSWORD and BIGLINER_MASTER_KEY
 npm install
-npm run build       # builds the web dashboard into web/dist
-npm start           # starts the backend at http://localhost:9879
+npm run build
+npm start
 ```
 
-For local development with hot-reload (server + web):
+Default server:
 
-```bash
-npm run dev
-# server: http://localhost:9879
-# web dev server: http://127.0.0.1:5180 (proxies /api and /v1 to the server)
+```text
+http://127.0.0.1:9879
 ```
 
-Sign in to the dashboard with the `BIGLINER_PASSWORD` you set in `.env`.
+Sign in to the dashboard with the configured `BIGLINER_PASSWORD`.
+
+## Configuration
+
+Minimum `.env`:
+
+```text
+BIGLINER_PASSWORD=<dashboard-password>
+BIGLINER_MASTER_KEY=<long-random-master-key>
+HOST=127.0.0.1
+PORT=9879
+NODE_ENV=production
+BIGLINER_PROMPT_LOG_MODE=preview
+```
+
+Prompt log modes:
+
+- `off`: store no prompt content.
+- `metadata`: store metadata only.
+- `preview`: store a short preview snippet.
+- `full`: store full prompt content.
 
 ## VPS deployment from Git
 
-Example production-style deployment from the GitHub repository:
+Example deployment from the GitHub repository:
 
 ```bash
 mkdir -p /home/ubuntu/apps
@@ -84,8 +102,7 @@ After=network.target
 Type=simple
 WorkingDirectory=/home/ubuntu/apps/bigliner
 EnvironmentFile=/home/ubuntu/apps/bigliner/.env
-Environment=PATH=/home/ubuntu/.local/bin:/home/ubuntu/.hermes/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/ubuntu/.local/bin/npm run start -w server
+ExecStart=/usr/bin/npm run start -w server
 Restart=always
 RestartSec=5
 User=ubuntu
@@ -103,13 +120,15 @@ sudo systemctl enable --now bigliner
 curl http://127.0.0.1:9879/api/health
 ```
 
+For public access, place Bigliner behind a reverse proxy or tunnel and enable HTTPS.
+
 ## Calling the gateway
 
-External apps authenticate with a unified Bigliner key (created on the **API Keys** page in the dashboard, default key seeded on first boot):
+Applications authenticate with a unified Bigliner key created from the API Keys page.
 
 ```bash
-curl http://localhost:9879/v1/chat/completions \
-  -H 'authorization: Bearer bl_YOUR_KEY' \
+curl http://127.0.0.1:9879/v1/chat/completions \
+  -H 'authorization: Bearer bl_your_key' \
   -H 'content-type: application/json' \
   --data '{
     "model": "openai:gpt-5.5-mini",
@@ -117,88 +136,97 @@ curl http://localhost:9879/v1/chat/completions \
   }'
 ```
 
-Bigliner inspects `model`, resolves it to a route, and forwards to the chosen provider using your encrypted provider key. The response is normalized to OpenAI's chat completion shape.
+Bigliner resolves the model or route alias, forwards the request to the selected provider, and normalizes the response to an OpenAI-compatible chat completion shape.
 
-### Routing model strings
+## Routing model strings
 
-| Form                 | Example                  | Behaviour |
-|----------------------|--------------------------|-----------|
-| `provider:model`     | `openai:gpt-5.5`         | Direct lane to that provider/model. |
-| Route alias          | `bigliner-cheap`         | Resolved through your alias chain. |
-| Bare model id        | `claude-opus-4.7`        | Looked up in the model registry; falls back to default route. |
-| Default              | (empty / unknown)        | Routes through the default route (`bigliner-smart` by default). |
+| Form | Example | Behavior |
+|---|---|---|
+| `provider:model` | `openai:gpt-5.5` | Direct route to that provider and model. |
+| Route alias | `bigliner-cheap` | Resolves through the configured alias chain. |
+| Bare model id | `claude-opus-4.7` | Looks up the model registry, then falls back to the default route if needed. |
+| Empty / unknown | empty model field | Uses the configured default route. |
 
-Default aliases seeded on first boot: `bigliner-smart`, `bigliner-fast`, `bigliner-cheap`, `bigliner-vision`, `bigliner-local`.
+Default aliases seeded on first boot:
+
+- `bigliner-smart`
+- `bigliner-fast`
+- `bigliner-cheap`
+- `bigliner-vision`
+- `bigliner-local`
 
 ## Dashboard pages
 
 | Page | Purpose |
 |---|---|
-| **Overview** | High-level system status, traffic chart, cost insights, fallback feed. |
-| **Providers** | All 100+ providers with filters (status / capability / category). |
-| **Provider detail** | Per-provider model list, keys (add / enable / delete), test connection. |
-| **Routes** | Create prefix / alias / fallback routes. Live route simulator. |
-| **Playground** | Send test requests, inspect route decision, see cost, generate `curl`. |
-| **Usage** | Per-provider / model / app analytics, charts, CSV export. |
-| **Logs** | Request log viewer with filters and detail drawer (fallback chain, prompt preview). |
-| **API Keys** | Create / rotate / revoke unified `bl_…` keys, scoped to routes/models with optional rate limit. |
-| **OAuth Login** | Register local apps, approve them, issue short-lived tokens. |
-| **OAuth Manage** | Manage apps + tokens, rotate client secrets. |
-| **Auth JSON** | Import / export auth config as JSON (secrets redacted unless explicitly opted in). |
-| **Settings** | Password, default route, Token Saver, prompt-log mode, retention, runtime info, danger-zone reset. |
+| Overview | System status, traffic range selector, cost insights, latency, fallback feed. |
+| Providers | Provider registry with status, capability, and category filters. |
+| Provider detail | Model list, provider keys, add/enable/delete key actions, connection test. |
+| Routes | Prefix routes, aliases, fallback routes, and route simulator. |
+| Playground | Test requests, inspect route decision, see estimated cost, generate cURL. |
+| Usage | Provider/model/app analytics, charts, and CSV export. |
+| Logs | Request log viewer with filters and request detail drawer. |
+| API Keys | Create, rotate, revoke, scope, and rate-limit unified keys. |
+| OAuth Login | Register apps, approve scopes, and issue tokens. |
+| OAuth Manage | Manage apps and tokens, rotate client secrets. |
+| Auth JSON | Import/export auth configuration with secret redaction. |
+| Settings | Password, default route, Token Saver, prompt logging, retention, runtime info, reset controls. |
+
+## Token Saver
+
+Token Saver can reduce context size before requests are forwarded:
+
+- Compress tool output.
+- Optionally compress assistant output.
+- Select safety mode: safe, balanced, or aggressive.
+- Limit maximum tool-output characters.
+- Track before/after token estimates in gateway metadata.
+
+This is useful for agent workflows where verbose command output, logs, stack traces, or repeated context can inflate token usage.
 
 ## Documentation
 
-- [docs/PROVIDERS.md](docs/PROVIDERS.md) — provider registry, statuses, adding a custom provider.
-- [docs/ROUTING.md](docs/ROUTING.md) — route engine, aliases, fallback chains, conditions.
-- [docs/OAUTH.md](docs/OAUTH.md) — local app auth flow, scopes, tokens.
-- [docs/SECURITY.md](docs/SECURITY.md) — encryption, secrets handling, privacy modes.
-- [docs/API.md](docs/API.md) — HTTP endpoint reference (`/api/*` and `/v1/*`).
-
-## Privacy
-
-Bigliner does not phone home. There is **no analytics telemetry to third parties**, no hidden external calls, and prompt content stays on your machine. The default prompt log mode is `preview` (short snippet only); switch it to `metadata` or `off` if you want even less. See [`docs/SECURITY.md`](docs/SECURITY.md).
+- `docs/PROVIDERS.md` — provider registry, statuses, and custom provider notes.
+- `docs/ROUTING.md` — route engine, aliases, fallback chains, and conditions.
+- `docs/OAUTH.md` — app authorization flow, scopes, and token handling.
+- `docs/SECURITY.md` — encryption, secrets handling, and prompt logging modes.
+- `docs/API.md` — HTTP endpoint reference for `/api/*` and `/v1/*`.
 
 ## Project layout
 
-```
+```text
 bigliner/
   server/                # Node + Express backend
     src/
-      adapters/          # OpenAI + Anthropic provider adapters
+      adapters/          # Provider adapters
       db/                # SQLite schema + connection
-      lib/               # crypto + id helpers
-      registry/          # static provider registry (100+ providers)
-      routes/            # /api/* and /v1/* HTTP route handlers
-      services/          # auth, key vault, route engine, analytics, gateway, …
-      config.js
-      index.js           # server entrypoint
-    test/                # node:test smoke tests
-  web/                   # React + Vite + Tailwind + Framer Motion dashboard
-  docs/                  # extra reference docs
-  .env.example           # template; copy to .env (never commit .env)
-  package.json           # workspace root
+      lib/               # Crypto + ID helpers
+      registry/          # Provider/model registry
+      routes/            # HTTP route handlers
+      services/          # Auth, vault, routing, analytics, gateway, token saver
+      index.js           # Server entrypoint
+    test/                # Node test suite
+  web/                   # React + Vite + Tailwind dashboard
+  docs/                  # Reference docs
+  .env.example           # Environment template
+  package.json           # Workspace root
 ```
 
 ## Scripts
 
-- `npm run dev` — run server (with `--watch`) and the Vite dev server in parallel.
+- `npm run dev` — run server and Vite dev server in parallel.
 - `npm run build` — build the web dashboard into `web/dist`.
-- `npm start` — build the web bundle and run the production-style server (serves API + static UI from one port).
-- `npm test` — run Node's built-in test runner against `server/test/**/*.test.js`.
-- `npm run lint` — quick syntax check (`node --check`) plus the web lint.
-
-## Acceptance criteria
-
-This rebuild covers all 15 items in the brief — local-first runtime, password login, ≥100-entry registry, masked & persisted keys, unified `bl_…` API keys, real OpenAI-compatible forwarding, Anthropic adapter, route builder, real logs, real usage, playground, settings, polished animated UI, no committed secrets, README + docs ready.
+- `npm start` — run the production server from the server workspace.
+- `npm test` — run the Node test suite.
+- `npm run lint` — run syntax checks and web lint.
 
 ## Roadmap
 
-- Streaming relay for SSE clients
-- Native adapters for Cohere, Bedrock, Vertex AI
-- Optional Docker image
-- Cache layer for repeated prompts
-- Per-key webhook notifications
+- Streaming relay for SSE clients.
+- Additional native provider adapters.
+- Docker image publishing.
+- Response cache and repeated prompt optimization.
+- Per-key webhook notifications.
 
 ## Hugging Face Spaces demo deployment
 
