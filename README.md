@@ -1,6 +1,6 @@
 # Bigliner
 
-**Local-first AI gateway and control plane.** Bigliner is a single-binary developer tool that sits between your apps and 100+ AI providers, gives you one unified API key, smart routing with fallback, real-time analytics, an OAuth-style flow for granting local apps access, and an animated dashboard to manage everything.
+**Local-first AI gateway.** Bigliner is a developer tool that sits between your apps and 100+ AI providers, gives you one unified API key, smart routing with fallback, real-time analytics, an OAuth-style flow for granting local apps access, and an animated dashboard to manage everything.
 
 > One key for your apps. Many providers under the hood. Everything stays on your machine.
 

@@ -8,13 +8,13 @@ export function AuroraBackground() {
       <div className="absolute inset-0 bubble-noise opacity-60" />
       <motion.div
         aria-hidden
-        className="absolute -top-40 -left-32 h-[640px] w-[640px] rounded-full bg-aurora-rose/40 blur-[140px]"
+        className="absolute -top-40 -left-32 h-[640px] w-[640px] rounded-full bg-aurora-rose/30 blur-[140px]"
         animate={{ x: [0, 80, -50, 0], y: [0, 50, -30, 0] }}
         transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         aria-hidden
-        className="absolute top-1/3 -right-40 h-[560px] w-[560px] rounded-full bg-aurora-violet/40 blur-[160px]"
+        className="absolute top-1/3 -right-40 h-[560px] w-[560px] rounded-full bg-aurora-violet/32 blur-[160px]"
         animate={{ x: [0, -60, 70, 0], y: [0, 40, -50, 0] }}
         transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
       />
@@ -26,7 +26,7 @@ export function AuroraBackground() {
       />
       <motion.div
         aria-hidden
-        className="absolute bottom-1/4 right-1/4 h-[420px] w-[420px] rounded-full bg-aurora-mint/30 blur-[140px]"
+        className="absolute bottom-1/4 right-1/4 h-[520px] w-[520px] rounded-full bg-aurora-mint/45 blur-[140px]"
         animate={{ x: [0, -40, 40, 0], y: [0, 40, -40, 0] }}
         transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
       />

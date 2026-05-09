@@ -54,8 +54,7 @@ export default function LoginPage({ onAuthed }: Props) {
           </div>
         </div>
         <p className="mt-6 text-sm text-ink-200">
-          Bigliner is a local-first control plane for 100+ AI providers. Sign in with the
-          dashboard password from your <code className="rounded bg-white/10 px-1 py-0.5 text-[12px]">.env</code>.
+          Manage providers, routes, API keys, and usage analytics from one private AI gateway.
         </p>
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div>

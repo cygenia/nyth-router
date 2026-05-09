@@ -39,7 +39,7 @@ export default {
       },
       backgroundImage: {
         'grid-fade': 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)',
-        'aurora-gradient': 'linear-gradient(135deg, #ff8fb6, #bca5ff 38%, #9ec9ff 68%, #9ce4c5)',
+        'aurora-gradient': 'linear-gradient(135deg, #ff8fb6, #bca5ff 34%, #9ec9ff 58%, #9ce4c5 82%, #b7ffd8)',
       },
       animation: {
         float: 'float 9s ease-in-out infinite',
