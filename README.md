@@ -7,7 +7,7 @@
 ```
 ┌──────────┐    bl_********   ┌──────────────┐    provider keys    ┌────────────┐
 │  Your    │ ───────────────► │   Bigliner   │ ───────────────────►│  OpenAI    │
-│  Apps    │                  │  (localhost) │                     │  Anthropic │
+│  Apps    │                  │  AI Gateway  │                     │  Anthropic │
 └──────────┘                  └──────────────┘                     │  Gemini    │
                                   ▲   ▲                            │  Groq      │
                               dashboard │                          │  Mistral   │
@@ -26,6 +26,7 @@
 - **Encrypted key vault** — provider keys are AES-256-GCM encrypted at rest using a master secret stored locally.
 - **Persistent SQLite store** for providers, keys, routes, apps, tokens, request logs, and daily aggregates.
 - **Analytics**: requests, tokens, cost, latency p50/p95/p99, fallback events, top expensive prompts, repeated prompt detector, "could be cheaper" simulator.
+- **Token Saver**: configurable compression for verbose tool outputs and optional assistant outputs, powered by deterministic text compression.
 - **Animated React dashboard** with aurora background, glass cards, live indicators, route simulator, playground, and dark glass UI.
 - **Configurable privacy** — prompt logging is `preview`-only by default and can be set to `off`, `metadata`, or `full`.
 
@@ -48,6 +49,59 @@ npm run dev
 ```
 
 Sign in to the dashboard with the `BIGLINER_PASSWORD` you set in `.env`.
+
+## VPS deployment from Git
+
+Example production-style deployment from the GitHub repository:
+
+```bash
+mkdir -p /home/ubuntu/apps
+git clone https://github.com/halucyyy/bigliner.git /home/ubuntu/apps/bigliner
+cd /home/ubuntu/apps/bigliner
+
+npm ci
+npm run build
+
+cat > .env <<'EOF'
+BIGLINER_PASSWORD=<dashboard-password>
+BIGLINER_MASTER_KEY=<long-random-master-key>
+HOST=127.0.0.1
+PORT=9879
+NODE_ENV=production
+BIGLINER_PROMPT_LOG_MODE=preview
+EOF
+chmod 600 .env
+```
+
+Systemd unit example:
+
+```ini
+[Unit]
+Description=Bigliner AI Gateway
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/apps/bigliner
+EnvironmentFile=/home/ubuntu/apps/bigliner/.env
+Environment=PATH=/home/ubuntu/.local/bin:/home/ubuntu/.hermes/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/ubuntu/.local/bin/npm run start -w server
+Restart=always
+RestartSec=5
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+```
+
+After installing the unit:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now bigliner
+curl http://127.0.0.1:9879/api/health
+```
 
 ## Calling the gateway
 
@@ -91,7 +145,7 @@ Default aliases seeded on first boot: `bigliner-smart`, `bigliner-fast`, `biglin
 | **OAuth Login** | Register local apps, approve them, issue short-lived tokens. |
 | **OAuth Manage** | Manage apps + tokens, rotate client secrets. |
 | **Auth JSON** | Import / export auth config as JSON (secrets redacted unless explicitly opted in). |
-| **Settings** | Password, default route, prompt-log mode, retention, runtime info, danger-zone reset. |
+| **Settings** | Password, default route, Token Saver, prompt-log mode, retention, runtime info, danger-zone reset. |
 
 ## Documentation
 
