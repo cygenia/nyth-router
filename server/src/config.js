@@ -56,7 +56,7 @@ export const config = {
     ? env.BIGLINER_PROMPT_LOG_MODE
     : 'preview',
   sessionTtlMs: 1000 * 60 * 60 * 12,
-  webDistPath: path.join(ROOT, '..', 'web', 'dist'),
+  webDistPath: path.join(ROOT, 'web', 'dist'),
 };
 
 export function isProduction() {
