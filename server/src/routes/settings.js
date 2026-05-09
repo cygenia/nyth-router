@@ -12,7 +12,7 @@ const upsertSetting = db.prepare(`
   ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
 `);
 
-const DEFAULTS = {
+export const DEFAULTS = {
   defaultRoute: 'bigliner-smart',
   defaultModelAlias: 'bigliner-smart',
   timeoutMs: '120000',
@@ -21,12 +21,21 @@ const DEFAULTS = {
   promptLogMode: config.promptLogMode,
   logRetentionDays: String(config.logRetentionDays),
   theme: 'aurora-dark',
+  tokenSaverEnabled: 'false',
+  tokenSaverMode: 'safe',
+  compressToolOutput: 'true',
+  compressAssistantOutput: 'false',
+  maxToolOutputChars: '12000',
 };
 
-router.get('/', (req, res) => {
+export function getSettings() {
   const rows = db.prepare('SELECT key, value FROM settings').all();
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  const merged = { ...DEFAULTS, ...map };
+  return { ...DEFAULTS, ...map };
+}
+
+router.get('/', (req, res) => {
+  const merged = getSettings();
   res.json({
     ok: true,
     settings: merged,

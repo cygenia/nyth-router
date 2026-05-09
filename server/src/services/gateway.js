@@ -10,6 +10,8 @@ import { logRequest } from './requestLogger.js';
 import { estimateMessages, estimateTokens, preview } from './tokenizer.js';
 import { estimateCost } from './costCalculator.js';
 import { prefixedId } from '../lib/id.js';
+import { optimizeMessages } from './tokenSaver.js';
+import { getSettings } from '../routes/settings.js';
 
 const REQUEST_TIMEOUT_MS = 120_000;
 
@@ -17,6 +19,9 @@ export async function dispatchChat({ body, app, unifiedKey }) {
   const requestId = prefixedId('req');
   const ts = Date.now();
   const requestedModel = body?.model || '';
+  const settings = getSettings();
+  const tokenSaver = optimizeMessages(body?.messages || [], settings);
+  const effectiveBody = tokenSaver.savings ? { ...body, messages: tokenSaver.messages } : body;
   const resolved = resolveModel(requestedModel);
   if (resolved.kind === 'unresolved' || !resolved.route) {
     const errorBody = {
@@ -69,7 +74,7 @@ export async function dispatchChat({ body, app, unifiedKey }) {
     }
     const baseUrl = keyEntry?.baseUrlOverride || providerRow.baseUrl;
     const adapter = getAdapter(providerRow.format);
-    const adapterBody = { ...body, model: step.modelId || body.model };
+    const adapterBody = { ...effectiveBody, model: step.modelId || body.model };
     delete adapterBody.bigliner;
     const stepStart = Date.now();
     const ctrl = new AbortController();
@@ -110,6 +115,7 @@ export async function dispatchChat({ body, app, unifiedKey }) {
           latencyMs: latency,
           fallbackChain,
           estimatedCost: cost,
+          tokenSaver: tokenSaver.savings,
           local: true,
         },
       };

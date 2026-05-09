@@ -29,5 +29,8 @@
     "control-plane",
     "developer-tools",
     "multi-provider"
-  ]
+  ],
+  "dependencies": {
+    "caveman-plus": "^1.1.1"
+  }
 }
