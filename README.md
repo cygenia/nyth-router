@@ -40,23 +40,18 @@ npm run build
 npm start
 ```
 
-Default server:
-
-```text
-http://127.0.0.1:9879
-```
-
-Sign in to the dashboard with the configured `BIGLINER_PASSWORD`.
+Set the bind address and public URL for your own environment. For production, run Bigliner behind HTTPS using a reverse proxy or managed ingress.
 
 ## Configuration
 
 Minimum `.env`:
 
 ```text
-BIGLINER_PASSWORD=<dashboard-password>
+BIGLINER_PASSWORD=<dashb...ord>
 BIGLINER_MASTER_KEY=<long-random-master-key>
-HOST=127.0.0.1
-PORT=9879
+HOST=0.0.0.0
+PORT=<port>
+PUBLIC_BASE_URL=https://bigliner.example.com
 NODE_ENV=production
 BIGLINER_PROMPT_LOG_MODE=preview
 ```
@@ -81,10 +76,11 @@ npm ci
 npm run build
 
 cat > .env <<'EOF'
-BIGLINER_PASSWORD=<dashboard-password>
+BIGLINER_PASSWORD=<dashb...ord>
 BIGLINER_MASTER_KEY=<long-random-master-key>
-HOST=127.0.0.1
-PORT=9879
+HOST=0.0.0.0
+PORT=<port>
+PUBLIC_BASE_URL=https://bigliner.example.com
 NODE_ENV=production
 BIGLINER_PROMPT_LOG_MODE=preview
 EOF
@@ -117,17 +113,17 @@ After installing the unit:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now bigliner
-curl http://127.0.0.1:9879/api/health
+curl https://bigliner.example.com/api/health
 ```
 
-For public access, place Bigliner behind a reverse proxy or tunnel and enable HTTPS.
+For direct internal checks, call the service on the bind address and port you configured in `.env`.
 
 ## Calling the gateway
 
 Applications authenticate with a unified Bigliner key created from the API Keys page.
 
 ```bash
-curl http://127.0.0.1:9879/v1/chat/completions \
+curl https://bigliner.example.com/v1/chat/completions \
   -H 'authorization: Bearer bl_your_key' \
   -H 'content-type: application/json' \
   --data '{
