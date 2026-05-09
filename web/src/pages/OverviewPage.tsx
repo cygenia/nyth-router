@@ -52,7 +52,7 @@ export default function OverviewPage() {
   return (
     <Page
       title="Overview"
-      description="A live snapshot of your local AI gateway — traffic, cost, latency, fallback events, and quick wins."
+      description="A live snapshot of your AI gateway — traffic, cost, latency, fallback events, and quick wins."
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {loading || !overview ? <Skeleton rows={4} height={120} /> : (

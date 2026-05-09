@@ -50,7 +50,7 @@ export default function LoginPage({ onAuthed }: Props) {
             <div className="font-display text-2xl font-semibold tracking-tight">
               Welcome to <span className="text-gradient">Bigliner</span>
             </div>
-            <div className="text-xs uppercase tracking-[0.22em] text-ink-300">Local AI Gateway</div>
+            <div className="text-xs uppercase tracking-[0.22em] text-ink-300">AI Gateway</div>
           </div>
         </div>
         <p className="mt-6 text-sm text-ink-200">

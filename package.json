@@ -2,7 +2,7 @@
   "name": "bigliner",
   "version": "0.2.0",
   "private": false,
-  "description": "Local-first AI gateway: 100+ providers, unified API key, smart routing, real-time analytics, and an animated dashboard.",
+  "description": "AI gateway: 100+ providers, unified API key, smart routing, real-time analytics, and an animated dashboard.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -28,6 +28,6 @@
     "router",
     "control-plane",
     "developer-tools",
-    "local-first"
+    "multi-provider"
   ]
 }

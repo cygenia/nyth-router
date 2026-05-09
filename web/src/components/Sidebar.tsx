@@ -55,7 +55,7 @@ export function Sidebar({ open, onClose }: Props) {
           <Logo />
           <div>
             <div className="font-display text-lg font-semibold tracking-tight text-ink-50">Bigliner</div>
-            <div className="text-[11px] uppercase tracking-[0.22em] text-ink-300">Local AI gateway</div>
+            <div className="text-[11px] uppercase tracking-[0.22em] text-ink-300">AI gateway</div>
           </div>
           <button
             type="button"
@@ -116,9 +116,9 @@ export function Sidebar({ open, onClose }: Props) {
         </nav>
         <div className="mt-4 space-y-3 px-2">
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-aurora-violet/15 via-aurora-sky/10 to-transparent p-4 text-sm text-ink-100">
-            <div className="font-semibold">Local-first</div>
+            <div className="font-semibold">Private by default</div>
             <p className="mt-1 text-xs text-ink-300">
-              No data leaves this machine. Provider keys are encrypted at rest with your master key.
+              Provider keys stay encrypted at rest with your master key.
             </p>
           </div>
           <button onClick={logout} className="w-full text-left text-xs text-ink-300 hover:text-aurora-rose">
