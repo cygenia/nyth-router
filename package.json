@@ -1,0 +1,18 @@
+{
+  "name": "bigliner",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "description": "Local-first AI gateway control plane for provider routing, custom API keys, and usage visibility.",
+  "keywords": [
+    "ai-gateway",
+    "openai-compatible",
+    "anthropic",
+    "api-gateway",
+    "developer-tools"
+  ],
+  "license": "MIT"
+}
