@@ -146,6 +146,22 @@ This rebuild covers all 15 items in the brief — local-first runtime, password 
 - Cache layer for repeated prompts
 - Per-key webhook notifications
 
+## Hugging Face Spaces demo deployment
+
+Bigliner can run as a Docker Space for demos. Keep real secrets in Space secrets, not in the repository.
+
+Recommended Space variables/secrets:
+
+```text
+BIGLINER_PASSWORD=<dashboard-password>
+BIGLINER_MASTER_KEY=<long-random-master-key>
+HOST=0.0.0.0
+PORT=7860
+BIGLINER_PROMPT_LOG_MODE=preview
+```
+
+The included `Dockerfile` builds the web dashboard and starts the server on the Hugging Face Spaces default port.
+
 ## License
 
-[MIT](LICENSE)
+MIT
