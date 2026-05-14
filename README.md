@@ -1,12 +1,18 @@
-<p align="center">
+<div align="center">
   <img src="web/public/brand/nyth-logo-transparent.png" alt="Nyth logo" width="160" />
-</p>
 
-# Nyth
+  <h1>Nyth</h1>
 
-Nyth is a private model workspace for running many AI providers behind one local, OpenAI-compatible API. It gives you a clean dashboard, unified app keys, routing, fallback paths, usage visibility, and a local encrypted vault for provider credentials.
+  <p>
+    Private model workspace for running many AI providers behind one local, OpenAI-compatible API.
+    Nyth gives you a clean dashboard, unified app keys, routing, fallback paths, usage visibility,
+    and a local encrypted vault for provider credentials.
+  </p>
 
-Use it on a laptop, workstation, home server, cloud VM, VPS, or any Linux box that can run Node.js.
+  <p>
+    Install it on a laptop, workstation, home server, cloud VM, VPS, or any Linux box that can run Node.js.
+  </p>
+</div>
 
 Dashboard URL after install:
 
