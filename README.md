@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="web/public/brand/nyth-logo.png" alt="Nyth logo" width="160" />
+</p>
+
 # Nyth
 
 Nyth is a private model workspace for running many AI providers behind one local, OpenAI-compatible API. It gives you a clean dashboard, unified app keys, routing, fallback paths, usage visibility, and a local encrypted vault for provider credentials.
@@ -10,6 +14,14 @@ Dashboard URL after install:
 http://localhost:9879/
 ```
 
+LLM base URL:
+
+```text
+http://localhost:9879/v1
+```
+
+Use this base URL in OpenAI-compatible clients, with a unified key created from the Nyth dashboard.
+
 ## Why Nyth
 
 - One local `/v1/chat/completions` endpoint for your apps.
@@ -21,17 +33,6 @@ http://localhost:9879/
 - Local SQLite storage with encrypted provider-key vault.
 - Works without sending provider credentials to any hosted control plane.
 
-## Public repository safety
-
-This repo is designed to be clean for public GitHub distribution.
-
-Never commit runtime secrets or local state:
-
-- `.env` and `.env.*` are ignored, except `.env.example`.
-- `server/data/*.db`, `server/data/*.db-wal`, `server/data/*.db-shm`, and `server/data/master.key` are ignored.
-- Provider keys, OAuth accounts, refresh tokens, dashboard sessions, app tokens, request logs, prompt logs, exported configs, and local databases must stay local.
-- Do not commit screenshots or logs from a real deployment.
-- Use `http://localhost:9879/` in docs and examples, not a VPS IP address.
 
 ## Requirements
 
@@ -124,10 +125,11 @@ npm install
 npm run dev
 ```
 
-Development URLs:
+Development note:
 
-- Web dev server: `http://localhost:5173/`
-- Backend API: `http://localhost:9879/`
+- `npm run dev` starts the backend and the Vite frontend hot-reload server for local development only.
+- Installed/production usage stays on `http://localhost:9879/`.
+- OpenAI-compatible LLM base URL stays `http://localhost:9879/v1`.
 
 ## Environment variables
 
@@ -169,7 +171,13 @@ No provider credentials or connected accounts are included by default.
 
 ## Calling Nyth from an app
 
-Create a unified key in the dashboard, then call the local endpoint:
+Create a unified key in the dashboard, then use this OpenAI-compatible LLM base URL:
+
+```text
+http://localhost:9879/v1
+```
+
+Example chat completion request:
 
 ```bash
 curl http://localhost:9879/v1/chat/completions \
