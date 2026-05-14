@@ -30,15 +30,44 @@ Use this base URL in OpenAI-compatible clients, with a unified key created from 
 
 ## Why Nyth
 
-- One local `/v1/chat/completions` endpoint for your apps.
-- One unified key per app, separate from provider API keys.
-- Provider and model registry with route builder.
-- Fallback routes when a provider is unavailable.
-- Usage, cost, latency, request logs, and token visibility.
-- Prompt logging controls: `off`, `metadata`, `preview`, or `full`.
-- Local SQLite storage with encrypted provider-key vault.
-- Works without sending provider credentials to any hosted control plane.
+Nyth turns a local machine or VPS into a private AI gateway. Your apps talk to one OpenAI-compatible endpoint while Nyth handles provider credentials, model routing, fallback decisions, usage visibility, and dashboard operations.
 
+<div align="center">
+  <img src="web/public/brand/nyth-mascot-aurora.png" alt="Nyth dashboard illustration" width="360" />
+</div>
+
+```text
+Apps / Agents / IDEs
+        │
+        │  OpenAI-compatible API
+        ▼
+http://localhost:9879/v1
+        │
+        ▼
+Nyth Router
+  ├─ Unified app keys
+  ├─ Route aliases and model registry
+  ├─ Provider fallback chains
+  ├─ Usage, cost, latency, and logs
+  └─ Local encrypted credential vault
+        │
+        ▼
+OpenAI · Anthropic · Gemini · Groq · Mistral · Ollama · Local/self-hosted providers
+```
+
+## Features
+
+- **OpenAI-compatible gateway** — point clients to `http://localhost:9879/v1` and use Nyth as a drop-in local routing layer.
+- **Unified app keys** — create one key per app without exposing provider API keys to clients.
+- **Provider routing** — map aliases such as `nyth-smart`, `nyth-fast`, or your own route names to specific models and providers.
+- **Fallback chains** — keep requests moving when a provider is slow, unavailable, or out of quota.
+- **Provider/model registry** — browse provider metadata, model capabilities, and route-ready model IDs from the dashboard.
+- **OAuth-capable provider accounts** — connect supported provider accounts from the UI and route requests through them.
+- **Usage analytics** — inspect requests, tokens, latency, estimated cost, fallback events, and activity trends.
+- **Prompt logging controls** — choose `off`, `metadata`, `preview`, or `full` based on your privacy preference.
+- **Local encrypted vault** — provider credentials stay on your machine in encrypted local storage.
+- **Dashboard-first operations** — manage providers, routes, API keys, OAuth connections, logs, settings, and playground tests from one UI.
+- **Portable deployment** — run it on a laptop, workstation, home server, cloud VM, VPS, or Linux host.
 
 ## Requirements
 
