@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/public/brand/nyth-logo.png" alt="Nyth logo" width="160" />
+  <img src="web/public/brand/nyth-logo-transparent.png" alt="Nyth logo" width="160" />
 </p>
 
 # Nyth
@@ -263,23 +263,6 @@ Then open through your own tunnel/reverse proxy, or locally with:
 http://localhost:9879/
 ```
 
-## Security checklist before publishing or deploying
-
-Before pushing your own fork or deploying a public instance:
-
-```bash
-git status --ignored --short
-git diff --check
-npm test
-npm run build
-```
-
-Also verify:
-
-- `.env` is not tracked.
-- `server/data/` is not tracked.
-- No logs, cache folders, database files, refresh tokens, provider keys, passwords, emails, or machine-specific IP addresses are staged.
-- `.env.example` contains placeholders only.
 
 ## License
 
