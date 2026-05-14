@@ -203,7 +203,7 @@ nyth-router/
     src/
       adapters/          Provider adapters
       db/                SQLite schema + connection
-      lib/               Crypto + ID helpers
+      lib/               Encryption + ID helpers
       registry/          Provider/model registry
       routes/            HTTP route handlers
       services/          Auth, vault, routing, analytics, gateway
