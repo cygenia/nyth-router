@@ -3,6 +3,7 @@ import { Page } from '../components/Page';
 import { Icons } from '../lib/icons';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
+import { Dropdown } from '../components/Dropdown';
 import { copyToClipboard, formatCurrency, formatLatency, formatNumber } from '../lib/format';
 
 interface ChatMessage {
@@ -13,8 +14,11 @@ interface ChatMessage {
 export default function PlaygroundPage() {
   const [routes, setRoutes] = useState<any[]>([]);
   const [keys, setKeys] = useState<any[]>([]);
-  const [model, setModel] = useState('bigliner-smart');
-  const [system, setSystem] = useState('You are Bigliner, a helpful, fast, friendly assistant.');
+  const [available, setAvailable] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accountId, setAccountId] = useState('');
+  const [model, setModel] = useState('nyth-smart');
+  const [system, setSystem] = useState('You are Nyth, a helpful, fast, friendly assistant.');
   const [user, setUser] = useState('Hello! What can you do?');
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(512);
@@ -27,6 +31,8 @@ export default function PlaygroundPage() {
   useEffect(() => {
     api<any>('/api/routes').then((r) => setRoutes(r.routes || [])).catch(() => undefined);
     api<any>('/api/oauth/unified-keys').then((r) => setKeys(r.keys || [])).catch(() => undefined);
+    api<any>('/api/playground/models').then((r) => setAvailable((r.providers || []).filter((p: any) => p.available))).catch(() => undefined);
+    api<any>('/api/oauth/provider-accounts').then((r) => setAccounts(r.accounts || [])).catch(() => undefined);
   }, []);
 
   async function decisionPreview() {
@@ -62,13 +68,17 @@ export default function PlaygroundPage() {
             messages,
             temperature,
             max_tokens: maxTokens,
+            ...(accountId ? { nyth: { providerAccountId: accountId } } : {}),
           },
         }),
       });
       setResponse(data.result);
       setDecision(data.decision);
-      if (!data.ok) toast.push('Request failed — check route or provider key.', 'error');
+      if (!data.ok) toast.push('Request failed. Check route, provider key, or OAuth account.', 'error');
     } catch (err: any) {
+      const payload = err?.data?.result || err?.data || { error: err?.message || 'Request failed' };
+      setResponse(payload);
+      setDecision(err?.data?.decision || null);
       toast.push(err?.message || 'Request failed', 'error');
     } finally {
       setBusy(false);
@@ -82,7 +92,7 @@ export default function PlaygroundPage() {
     ];
     const data = await api<any>('/api/playground/curl', {
       method: 'POST',
-      body: JSON.stringify({ model, messages, apiKey: 'bl_YOUR_UNIFIED_KEY' }),
+      body: JSON.stringify({ model, messages, apiKey: 'YOUR_UNIFIED_KEY' }),
     });
     copyToClipboard(data.curl);
     toast.push('curl command copied to clipboard.', 'success');
@@ -90,7 +100,9 @@ export default function PlaygroundPage() {
 
   const choice = response?.choices?.[0];
   const usage = response?.usage;
-  const meta = response?.bigliner;
+  const meta = response?.nyth;
+  const oauthAccountProvider = model.startsWith('codex/') || model.startsWith('codex:') ? 'codex' : model.startsWith('claude-oauth/') || model.startsWith('claude-oauth:') ? 'anthropic' : model.startsWith('gemini-oauth/') || model.startsWith('gemini-oauth:') ? 'gemini' : model.startsWith('kiro/') || model.startsWith('kiro:') ? 'kiro' : '';
+  const matchingAccounts = oauthAccountProvider ? accounts.filter((acct) => acct.providerId === oauthAccountProvider) : [];
 
   return (
     <Page
@@ -119,7 +131,7 @@ export default function PlaygroundPage() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
               <label className="field-label">Model / route</label>
-              <input className="field-input mt-1 font-mono" value={model} onChange={(e) => setModel(e.target.value)} placeholder="bigliner-smart, openai:gpt-5.5" />
+              <input className="field-input mt-1 font-mono" value={model} onChange={(e) => setModel(e.target.value)} placeholder="nyth-smart, codex/gpt-5.5, openai/gpt-5.5" />
               <div className="mt-2 flex flex-wrap gap-1">
                 {routes.slice(0, 6).map((r) => (
                   <button key={r.id} onClick={() => setModel(r.alias || r.id)} className="pill text-[10px] hover:text-aurora-mint">
@@ -127,6 +139,28 @@ export default function PlaygroundPage() {
                   </button>
                 ))}
               </div>
+              {available.length > 0 && (
+                <Dropdown
+                  className="mt-2"
+                  value=""
+                  placeholder="Available models from connected keys/OAuth..."
+                  options={available.flatMap((p: any) => (p.models || []).map((m: any) => ({
+                    value: m.modelRef || `${p.id}/${m.id}`,
+                    label: m.modelRef || `${p.id}/${m.id}`,
+                    description: `${p.name}, ${m.displayName || m.id}`,
+                  })))}
+                  onChange={(value) => { if (value) setModel(value); }}
+                />
+              )}
+              {matchingAccounts.length > 0 && (
+                <Dropdown
+                  className="mt-2"
+                  value={accountId}
+                  placeholder="Default OAuth account"
+                  options={[{ value: '', label: 'Default OAuth account' }, ...matchingAccounts.map((acct: any) => ({ value: acct.id, label: acct.accountLabel || acct.accountEmail || acct.id, description: acct.accountEmail || acct.providerName }))]}
+                  onChange={setAccountId}
+                />
+              )}
             </div>
             <div>
               <label className="field-label">Temperature</label>
@@ -178,7 +212,7 @@ export default function PlaygroundPage() {
           {response && (
             <div className="mt-3 space-y-3">
               {response.error ? (
-                <pre className="rounded-2xl border border-aurora-rose/40 bg-aurora-rose/10 p-3 text-xs text-aurora-rose">
+                <pre className="max-h-72 overflow-auto pretty-scroll rounded-2xl border border-aurora-rose/40 bg-aurora-rose/10 p-3 text-xs text-aurora-rose whitespace-pre-wrap">
 {JSON.stringify(response.error, null, 2)}
                 </pre>
               ) : (
@@ -214,7 +248,7 @@ export default function PlaygroundPage() {
               <ul className="mt-2 space-y-1 text-xs">
                 {estimate.cheapest.slice(0, 5).map((c: any) => (
                   <li key={`${c.providerId}-${c.modelId}`} className="flex justify-between rounded-xl border border-white/10 bg-white/5 px-2 py-1">
-                    <span className="font-mono">{c.providerId}:{c.modelId}</span>
+                    <span className="font-mono">{c.providerId}/{c.modelId}</span>
                     <span className="text-aurora-mint">{formatCurrency(c.estimatedCost)}</span>
                   </li>
                 ))}
@@ -227,7 +261,7 @@ export default function PlaygroundPage() {
         <section className="panel p-5">
           <h3 className="font-display text-lg font-semibold text-ink-50">External app integration</h3>
           <p className="text-sm text-ink-300">
-            External apps connect using a unified Bigliner key (<code className="font-mono">bl_…</code>) on the standard
+            Apps can connect using any Nyth key, including custom keys without a prefix, on the standard
             <code className="ml-1 font-mono">/v1/chat/completions</code> endpoint. Manage keys on the API keys page.
           </p>
         </section>

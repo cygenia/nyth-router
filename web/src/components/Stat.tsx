@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 import { IconName, Icons } from '../lib/icons';
+import { usePreferences } from '../lib/preferences';
 
 interface StatProps {
   label: string;
@@ -20,6 +21,9 @@ const accentMap: Record<string, string> = {
 
 export function Stat({ label, value, hint, icon = 'Sparkles', accent = 'violet' }: StatProps) {
   const Icon = Icons[icon];
+  const { t } = usePreferences();
+  const renderedLabel = t(label);
+  const renderedHint = typeof hint === 'string' ? t(hint) : hint;
   return (
     <motion.div
       whileHover={{ y: -3 }}
@@ -28,7 +32,7 @@ export function Stat({ label, value, hint, icon = 'Sparkles', accent = 'violet' 
     >
       <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br ${accentMap[accent]} opacity-70 blur-3xl`} />
       <div className="relative flex items-center justify-between">
-        <span className="field-label">{label}</span>
+        <span className="field-label">{renderedLabel}</span>
         <span className={`rounded-full border border-white/10 bg-white/5 p-2 ${accentMap[accent].split(' ').pop()}`}>
           <Icon className="h-3.5 w-3.5" />
         </span>
@@ -36,7 +40,7 @@ export function Stat({ label, value, hint, icon = 'Sparkles', accent = 'violet' 
       <div className="relative mt-3 font-display text-3xl font-semibold tracking-tight text-ink-50">
         {value}
       </div>
-      {hint && <div className="relative mt-1 text-xs text-ink-300">{hint}</div>}
+      {renderedHint && <div className="relative mt-1 text-xs text-ink-300">{renderedHint}</div>}
     </motion.div>
   );
 }

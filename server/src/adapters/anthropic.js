@@ -1,6 +1,6 @@
 // Anthropic adapter. Converts an OpenAI-shaped request into Anthropic's
 // /v1/messages format and the response back into OpenAI's chat-completion
-// shape so Bigliner can stay OpenAI-compatible end-to-end.
+// shape so Nyth Router can stay OpenAI-compatible end-to-end.
 
 const DEFAULT_VERSION = '2023-06-01';
 

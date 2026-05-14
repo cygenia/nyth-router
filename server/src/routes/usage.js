@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireDashboard } from '../middleware/auth.js';
 import * as analytics from '../services/analytics.js';
-import { compareAcrossModels } from '../services/costCalculator.js';
+import { compareAcrossModels, getPricingCoverage } from '../services/costCalculator.js';
 
 const router = Router();
 
@@ -36,6 +36,10 @@ router.get('/fallbacks', (req, res) => {
   res.json({ ok: true, fallbacks: analytics.getRecentFallbacks(Number(req.query.limit) || 20) });
 });
 
+router.get('/pricing-coverage', (req, res) => {
+  res.json({ ok: true, coverage: getPricingCoverage(Number(req.query.days) || 14) });
+});
+
 router.post('/cheaper-route', (req, res) => {
   const inputTokens = Number(req.body?.inputTokens || 1000);
   const outputTokens = Number(req.body?.outputTokens || 500);
@@ -48,7 +52,7 @@ router.post('/cheaper-route', (req, res) => {
 router.get('/export.csv', (req, res) => {
   const data = analytics.getDailyUsage(60);
   res.setHeader('content-type', 'text/csv; charset=utf-8');
-  res.setHeader('content-disposition', 'attachment; filename="bigliner-daily-usage.csv"');
+  res.setHeader('content-disposition', 'attachment; filename="nyth-daily-usage.csv"');
   const header = 'day,requests,input_tokens,output_tokens,estimated_cost,errors';
   const rows = data.map((r) => `${r.day},${r.requests},${r.inputTokens},${r.outputTokens},${r.estimatedCost},${r.errors}`);
   res.end([header, ...rows].join('\n'));

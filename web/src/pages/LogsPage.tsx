@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Page } from '../components/Page';
 import { Skeleton } from '../components/Skeleton';
 import { Modal } from '../components/Modal';
+import { Dropdown } from '../components/Dropdown';
 import { Icons } from '../lib/icons';
 import { api } from '../lib/api';
-import { formatCurrency, formatLatency, formatNumber, relativeTime } from '../lib/format';
+import { formatCost, formatLatency, formatNumber, relativeTime } from '../lib/format';
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -59,19 +60,30 @@ export default function LogsPage() {
           <input
             value={filter.q}
             onChange={(e) => setFilter({ ...filter, q: e.target.value })}
-            placeholder="Search model, prompt preview…"
+            placeholder="Search model, prompt preview..."
             className="flex-1 bg-transparent text-ink-50 placeholder:text-ink-300/70 outline-none"
           />
         </div>
-        <select value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })} className="rounded-xl border border-white/10 bg-ink-900/60 px-3 py-2 text-xs text-ink-100">
-          <option value="all" className="bg-ink-950">all status</option>
-          <option value="ok" className="bg-ink-950">success</option>
-          <option value="error" className="bg-ink-950">errors</option>
-        </select>
-        <select value={filter.providerId} onChange={(e) => setFilter({ ...filter, providerId: e.target.value })} className="rounded-xl border border-white/10 bg-ink-900/60 px-3 py-2 text-xs text-ink-100">
-          <option value="all" className="bg-ink-950">all providers</option>
-          {providers.map((p) => <option key={p.id} value={p.id} className="bg-ink-950">{p.name}</option>)}
-        </select>
+<Dropdown
+value={filter. status}
+onChange={(value) => setFilter({...filter, status: value })}
+options={[
+{ value: 'all', label: 'all status' },
+{ value: 'ok', label: 'success' },
+{ value: 'error', label: 'errors' },
+]}
+className="w-full md:w-36"
+buttonClassName="!rounded-xl !bg-ink-900/60 !px-3 !py-2 !text-xs !text-ink-100"
+menuAlign="right"
+/>
+<Dropdown
+value={filter. providerId}
+onChange={(value) => setFilter({...filter, providerId: value })}
+options={[{ value: 'all', label: 'all providers' }, ... providers.map((p) => ({ value: p. id, label: p. name }))]}
+className="w-full md:w-48"
+buttonClassName="!rounded-xl !bg-ink-900/60 !px-3 !py-2 !text-xs !text-ink-100"
+menuAlign="right"
+/>
       </div>
 
       {loading ? (
@@ -83,7 +95,7 @@ export default function LogsPage() {
               <thead className="text-xs uppercase tracking-wider text-ink-300">
                 <tr>
                   <th className="px-4 py-3">Time</th>
-                  <th className="px-4 py-3">Provider · Model</th>
+                  <th className="px-4 py-3">Provider, Model</th>
                   <th className="px-4 py-3">Route / app</th>
                   <th className="px-4 py-3 text-right">Tokens</th>
                   <th className="px-4 py-3 text-right">Cost</th>
@@ -93,20 +105,20 @@ export default function LogsPage() {
               </thead>
               <tbody>
                 {logs.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-6 text-center text-ink-300">No logs yet — send a test request via the Playground or your unified key.</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-6 text-center text-ink-300">No logs yet - send a test request via the Playground or your unified key.</td></tr>
                 ) : logs.map((l) => (
                   <tr key={l.id} onClick={() => setActiveLog(l)} className="cursor-pointer border-t border-white/5 transition hover:bg-white/[0.04]">
                     <td className="px-4 py-3 text-ink-200">{relativeTime(l.ts)}</td>
                     <td className="px-4 py-3">
-                      <div className="text-ink-100">{l.providerId || '—'}</div>
-                      <div className="font-mono text-xs text-ink-300">{l.model || '—'}</div>
+                      <div className="text-ink-100">{l.providerId || '-'}</div>
+                      <div className="font-mono text-xs text-ink-300">{l.model || '-'}</div>
                     </td>
                     <td className="px-4 py-3 text-ink-200">
-                      {l.routeAlias ? <span className="font-mono text-xs">{l.routeAlias}</span> : '—'}
+                      {l.routeAlias ? <span className="font-mono text-xs">{l.routeAlias}</span> : '-'}
                       {l.appName && <div className="text-xs text-ink-300">{l.appName}</div>}
                     </td>
                     <td className="px-4 py-3 text-right text-ink-200">{formatNumber(l.totalTokens)}</td>
-                    <td className="px-4 py-3 text-right text-aurora-mint">{formatCurrency(l.estimatedCost)}</td>
+                    <td className="px-4 py-3 text-right text-aurora-mint">{formatCost(l.estimatedCost, l.costIncomplete)}</td>
                     <td className="px-4 py-3 text-right text-ink-200">{formatLatency(l.latencyMs)}</td>
                     <td className="px-4 py-3">
                       {l.status === 'ok' ? (
@@ -128,17 +140,17 @@ export default function LogsPage() {
         onClose={() => setActiveLog(null)}
         size="lg"
         title={activeLog?.id}
-        description={activeLog && `${new Date(activeLog.ts).toLocaleString()} · ${activeLog.providerId || '—'} · ${activeLog.model || '—'}`}
+        description={activeLog && `${new Date(activeLog.ts).toLocaleString()}, ${activeLog.providerId || '-'}, ${activeLog.model || '-'}`}
       >
         {activeLog && (
           <div className="space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <Cell label="Status" value={activeLog.status} />
               <Cell label="Endpoint" value={activeLog.endpoint || '/v1/chat/completions'} />
-              <Cell label="Route" value={activeLog.routeAlias || '—'} />
-              <Cell label="App" value={activeLog.appName || '—'} />
+              <Cell label="Route" value={activeLog.routeAlias || '-'} />
+              <Cell label="App" value={activeLog.appName || '-'} />
               <Cell label="Latency" value={formatLatency(activeLog.latencyMs)} />
-              <Cell label="Cost" value={formatCurrency(activeLog.estimatedCost)} />
+              <Cell label="Cost" value={formatCost(activeLog.estimatedCost, activeLog.costIncomplete)} />
               <Cell label="Input tokens" value={formatNumber(activeLog.inputTokens)} />
               <Cell label="Output tokens" value={formatNumber(activeLog.outputTokens)} />
             </div>
@@ -148,7 +160,7 @@ export default function LogsPage() {
                 <ul className="mt-2 space-y-1 text-xs">
                   {activeLog.fallbackChain.map((step: any, idx: number) => (
                     <li key={idx} className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
-                      {idx + 1}. {step.providerId} · {step.model || 'auto'} {step.reason ? `→ ${step.reason}` : ''}
+                      {idx + 1}. {step.providerId}, {step.model || 'auto'} {step.reason ? `to ${step.reason}` : ''}
                     </li>
                   ))}
                 </ul>

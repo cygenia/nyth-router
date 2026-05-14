@@ -24,7 +24,7 @@ router.get('/', (req, res) => {
 router.get('/export.csv', (req, res) => {
   const logs = logger.listLogs({ limit: 1000, offset: 0 });
   res.setHeader('content-type', 'text/csv; charset=utf-8');
-  res.setHeader('content-disposition', 'attachment; filename="bigliner-logs.csv"');
+  res.setHeader('content-disposition', 'attachment; filename="nyth-logs.csv"');
   const header = 'ts,app,route,provider,model,inputTokens,outputTokens,estimatedCost,latencyMs,status';
   const rows = logs.map((l) => [
     new Date(l.ts).toISOString(),

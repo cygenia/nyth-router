@@ -1,6 +1,6 @@
 import { touchSession } from '../services/auth.js';
 
-const SESSION_COOKIE = 'bigliner_session';
+const SESSION_COOKIE = 'nyth_session';
 
 function parseCookies(req) {
   const out = {};
@@ -17,7 +17,7 @@ function parseCookies(req) {
 }
 
 export function readSession(req) {
-  const headerToken = req.headers['x-bigliner-session'];
+  const headerToken = req.headers['x-nyth-session'];
   if (typeof headerToken === 'string' && headerToken.length) {
     const valid = touchSession(headerToken);
     if (valid) return { token: headerToken };

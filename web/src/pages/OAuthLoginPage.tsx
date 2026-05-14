@@ -58,8 +58,8 @@ export default function OAuthLoginPage() {
 
   return (
     <Page
-      title="OAuth login"
-      description="Apps connect to Bigliner using a Bigliner-issued OAuth-style token. Provider keys never leave the local vault."
+      title="App access"
+      description="Apps connect through Nyth without seeing provider keys."
       actions={
         <button onClick={() => setShowNew(true)} className="btn-primary">
           <Icons.Plus className="h-4 w-4" /> Register app
@@ -67,12 +67,12 @@ export default function OAuthLoginPage() {
       }
     >
       <section className="panel p-5">
-        <h3 className="font-display text-lg font-semibold text-ink-50">How Bigliner OAuth works</h3>
+        <h3 className="font-display text-lg font-semibold text-ink-50">How app access works</h3>
         <ol className="mt-3 space-y-2 text-sm text-ink-200">
-          <li><span className="text-aurora-mint">1.</span> Register your local app here. Bigliner issues a client_id and a one-time client_secret.</li>
-          <li><span className="text-aurora-mint">2.</span> The app initiates auth — you approve from this dashboard.</li>
-          <li><span className="text-aurora-mint">3.</span> Bigliner issues a scoped <code className="font-mono">blat_</code> token the app uses on <code className="font-mono">/v1/*</code>.</li>
-          <li><span className="text-aurora-mint">4.</span> Manage, revoke, and rotate from the OAuth apps page.</li>
+          <li><span className="text-aurora-mint">1.</span> Add your app here. Nyth creates its sign-in details.</li>
+          <li><span className="text-aurora-mint">2.</span> The app asks for access — you approve it here.</li>
+          <li><span className="text-aurora-mint">3.</span> Nyth gives the app a limited <code className="font-mono">blat_</code> token the app uses on <code className="font-mono">/v1/*</code>.</li>
+          <li><span className="text-aurora-mint">4.</span> Manage, revoke, and rotate from the Connected apps page.</li>
         </ol>
       </section>
 
@@ -206,7 +206,7 @@ export default function OAuthLoginPage() {
         }
       >
         <div className="space-y-3 text-sm">
-          <p className="text-ink-200">{issueFor?.description || 'Local app requests access to Bigliner.'}</p>
+          <p className="text-ink-200">{issueFor?.description || 'This app wants to connect to Nyth.'}</p>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
             <div className="text-xs uppercase tracking-wider text-ink-300">Scopes</div>
             <div className="mt-1 flex flex-wrap gap-1">

@@ -1,7 +1,7 @@
-// Bigliner provider registry — May 2026 snapshot.
+// Nyth Router provider registry - May 2026 snapshot.
 // Each entry is metadata only by default. Some providers are flagged as
 // "implemented" because they share OpenAI- or Anthropic-compatible APIs that
-// Bigliner's adapters can route to without provider-specific SDKs.
+// Nyth Router's adapters can route to without provider-specific SDKs.
 //
 // Capabilities use these tags:
 //   chat, completion, embeddings, image, vision, audio, rerank, tools, streaming
@@ -10,9 +10,9 @@
 //   openai-compatible | anthropic-compatible | native | local
 //
 // Status values:
-//   implemented      — works through Bigliner adapters today
-//   metadata-only    — listed in registry, no live adapter yet
-//   planned          — adapter on the roadmap
+//   implemented      - works through Nyth Router adapters today
+//   metadata-only    - listed in registry, no live adapter yet
+//   planned          - adapter on the roadmap
 //
 // All pricing values are USD per 1K tokens. `null` means unknown.
 
@@ -33,12 +33,38 @@ const registry = [
       { id: 'gpt-5.5-mini', display: 'GPT-5.5 Mini', context: 400000, in: 0.5, out: 1.5, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'GA', tags: ['fast', 'cheap'] },
       { id: 'gpt-5', display: 'GPT-5', context: 600000, in: 2, out: 8, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'GA', tags: ['frontier'] },
       { id: 'gpt-5-mini', display: 'GPT-5 Mini', context: 200000, in: 0.3, out: 1.2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cheap'] },
+      { id: 'gpt-5-codex', display: 'GPT-5 Codex', context: 400000, in: 1.25, out: 10, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code', 'agentic-coding', 'codex'] },
+      { id: 'codex-1', display: 'Codex 1', context: 200000, in: 1.5, out: 6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code', 'codex'] },
       { id: 'gpt-4.1', display: 'GPT-4.1', context: 200000, in: 2, out: 8, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'GA', tags: ['stable'] },
       { id: 'gpt-4.1-mini', display: 'GPT-4.1 Mini', context: 128000, in: 0.4, out: 1.6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
       { id: 'o4', display: 'o4', context: 200000, in: 4, out: 16, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['reasoning'] },
       { id: 'o4-mini', display: 'o4 Mini', context: 128000, in: 1.1, out: 4.4, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['reasoning', 'cheap'] },
       { id: 'text-embedding-3-large', display: 'Embedding 3 Large', context: 8192, in: 0.13, out: 0, capabilities: ['embeddings'], status: 'GA', tags: ['embedding'] },
       { id: 'text-embedding-3-small', display: 'Embedding 3 Small', context: 8192, in: 0.02, out: 0, capabilities: ['embeddings'], status: 'GA', tags: ['embedding'] },
+    ],
+  },
+  {
+    id: 'codex',
+    name: 'OpenAI Codex OAuth',
+    category: 'oauth',
+    format: 'codex-account',
+    baseUrl: 'https://chatgpt.com/backend-api/codex',
+    authType: 'oauth-connected',
+    capabilities: ['chat', 'completion', 'embeddings', 'image', 'vision', 'audio', 'tools', 'streaming'],
+    docsUrl: 'https://developers.openai.com/codex',
+    status: 'implemented',
+    notes: 'Uses a connected OpenAI/Codex OAuth account. Exposes the same OpenAI model catalog through account quota instead of a provider API key.',
+    models: [
+      { id: 'gpt-5.5', display: 'GPT-5.5', context: 1000000, in: null, out: null, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'oauth', tags: ['frontier', 'reasoning', 'oauth'] },
+      { id: 'gpt-5.5-mini', display: 'GPT-5.5 Mini', context: 400000, in: null, out: null, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'oauth', tags: ['fast', 'cheap', 'oauth'] },
+      { id: 'gpt-5', display: 'GPT-5', context: 600000, in: null, out: null, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'oauth', tags: ['frontier', 'oauth'] },
+      { id: 'gpt-5-mini', display: 'GPT-5 Mini', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['cheap', 'oauth'] },
+      { id: 'gpt-5-codex', display: 'GPT-5 Codex', context: 400000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['code', 'agentic-coding', 'codex', 'oauth'] },
+      { id: 'codex-1', display: 'Codex 1', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['code', 'codex', 'oauth'] },
+      { id: 'gpt-4.1', display: 'GPT-4.1', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'oauth', tags: ['stable', 'oauth'] },
+      { id: 'gpt-4.1-mini', display: 'GPT-4.1 Mini', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['fast', 'oauth'] },
+      { id: 'o4', display: 'o4', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['reasoning', 'oauth'] },
+      { id: 'o4-mini', display: 'o4 Mini', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['reasoning', 'cheap', 'oauth'] },
     ],
   },
   {
@@ -60,6 +86,27 @@ const registry = [
       { id: 'claude-haiku-3.5', display: 'Claude Haiku 3.5', context: 200000, in: 0.2, out: 1.0, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cheap'] },
     ],
   },
+
+  {
+    id: 'claude-oauth',
+    name: 'Claude Code OAuth',
+    category: 'oauth',
+    format: 'anthropic-compatible',
+    baseUrl: 'https://api.anthropic.com',
+    authType: 'oauth-connected',
+    capabilities: ['chat', 'vision', 'tools', 'streaming'],
+    docsUrl: 'https://docs.anthropic.com',
+    status: 'implemented',
+    notes: 'Uses a connected Claude Code OAuth account. Exposes Claude models through account quota instead of an Anthropic API key.',
+    models: [
+      { id: 'claude-opus-4.7', display: 'Claude Opus 4.7', context: 500000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['frontier', 'reasoning', 'oauth'] },
+      { id: 'claude-opus-4.5', display: 'Claude Opus 4.5', context: 400000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['frontier', 'oauth'] },
+      { id: 'claude-sonnet-4.5', display: 'Claude Sonnet 4.5', context: 400000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['balanced', 'oauth'] },
+      { id: 'claude-sonnet-4.2', display: 'Claude Sonnet 4.2', context: 200000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['balanced', 'oauth'] },
+      { id: 'claude-haiku-4', display: 'Claude Haiku 4', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['fast', 'cheap', 'oauth'] },
+      { id: 'claude-haiku-3.5', display: 'Claude Haiku 3.5', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['cheap', 'oauth'] },
+    ],
+  },
   {
     id: 'google',
     name: 'Google Gemini',
@@ -71,11 +118,34 @@ const registry = [
     docsUrl: 'https://ai.google.dev/docs',
     status: 'implemented',
     models: [
-      { id: 'gemini-3.0-pro', display: 'Gemini 3.0 Pro', context: 2000000, in: 2.5, out: 10, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'multimodal'] },
+      { id: 'gemini-3.5-pro', display: 'Gemini 3.5 Pro', context: 2000000, in: 3.0, out: 12, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'multimodal'] },
+      { id: 'gemini-3.5-flash', display: 'Gemini 3.5 Flash', context: 1000000, in: 0.18, out: 0.72, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'cheap'] },
+      { id: 'gemini-3.0-pro', display: 'Gemini 3.0 Pro', context: 2000000, in: 2.5, out: 10, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'GA', tags: ['stable', 'multimodal'] },
       { id: 'gemini-3.0-flash', display: 'Gemini 3.0 Flash', context: 1000000, in: 0.15, out: 0.6, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'cheap'] },
-      { id: 'gemini-2.5-pro', display: 'Gemini 2.5 Pro', context: 2000000, in: 1.25, out: 5, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'GA', tags: ['multimodal'] },
-      { id: 'gemini-2.5-flash', display: 'Gemini 2.5 Flash', context: 1000000, in: 0.1, out: 0.4, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
+      { id: 'gemini-2.5-pro', display: 'Gemini 2.5 Pro', context: 2000000, in: 1.25, out: 5, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'GA', tags: ['legacy'] },
+      { id: 'gemini-2.5-flash', display: 'Gemini 2.5 Flash', context: 1000000, in: 0.1, out: 0.4, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['legacy', 'fast'] },
       { id: 'gemini-embedding-3', display: 'Gemini Embedding 3', context: 8192, in: 0.025, out: 0, capabilities: ['embeddings'], status: 'GA', tags: ['embedding'] },
+    ],
+  },
+
+  {
+    id: 'gemini-oauth',
+    name: 'Gemini CLI OAuth',
+    category: 'oauth',
+    format: 'gemini-oauth-account',
+    baseUrl: 'https://cloudcode-pa.googleapis.com/v1internal',
+    authType: 'oauth-connected',
+    capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'],
+    docsUrl: 'https://ai.google.dev/docs',
+    status: 'implemented',
+    notes: 'Uses a connected Gemini CLI OAuth account. Exposes Gemini models through account quota instead of a Google API key.',
+    models: [
+      { id: 'gemini-3.5-pro', display: 'Gemini 3.5 Pro', context: 2000000, in: null, out: null, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'oauth', tags: ['frontier', 'multimodal', 'oauth'] },
+      { id: 'gemini-3.5-flash', display: 'Gemini 3.5 Flash', context: 1000000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['fast', 'cheap', 'oauth'] },
+      { id: 'gemini-3.0-pro', display: 'Gemini 3.0 Pro', context: 2000000, in: null, out: null, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'oauth', tags: ['stable', 'multimodal', 'oauth'] },
+      { id: 'gemini-3.0-flash', display: 'Gemini 3.0 Flash', context: 1000000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['fast', 'cheap', 'oauth'] },
+      { id: 'gemini-2.5-pro', display: 'Gemini 2.5 Pro', context: 2000000, in: null, out: null, capabilities: ['chat', 'vision', 'audio', 'tools', 'streaming'], status: 'oauth', tags: ['legacy', 'oauth'] },
+      { id: 'gemini-2.5-flash', display: 'Gemini 2.5 Flash', context: 1000000, in: null, out: null, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'oauth', tags: ['legacy', 'fast', 'oauth'] },
     ],
   },
   {
@@ -89,9 +159,13 @@ const registry = [
     docsUrl: 'https://docs.x.ai',
     status: 'implemented',
     models: [
-      { id: 'grok-5', display: 'Grok 5', context: 256000, in: 3, out: 12, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier'] },
-      { id: 'grok-5-mini', display: 'Grok 5 Mini', context: 128000, in: 0.5, out: 2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
-      { id: 'grok-4', display: 'Grok 4', context: 128000, in: 2, out: 10, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['stable'] },
+      { id: 'grok-4', display: 'Grok 4', context: 256000, in: 3, out: 15, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'GA', tags: ['frontier'] },
+      { id: 'grok-4-0709', display: 'Grok 4 0709', context: 256000, in: 3, out: 15, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'GA', tags: ['pinned'] },
+      { id: 'grok-4-fast-reasoning', display: 'Grok 4 Fast Reasoning', context: 2000000, in: 0.2, out: 0.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'reasoning'] },
+      { id: 'grok-4-fast-non-reasoning', display: 'Grok 4 Fast Non Reasoning', context: 2000000, in: 0.2, out: 0.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
+      { id: 'grok-3-latest', display: 'Grok 3 Latest', context: 128000, in: 3, out: 15, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['stable'] },
+      { id: 'grok-3-mini-latest', display: 'Grok 3 Mini Latest', context: 128000, in: 0.3, out: 0.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cheap'] },
+      { id: 'grok-2-vision-latest', display: 'Grok 2 Vision Latest', context: 32000, in: 2, out: 10, capabilities: ['chat', 'vision', 'streaming'], status: 'GA', tags: ['vision'] },
     ],
   },
   {
@@ -105,11 +179,14 @@ const registry = [
     docsUrl: 'https://docs.mistral.ai',
     status: 'implemented',
     models: [
-      { id: 'mistral-large-3', display: 'Mistral Large 3', context: 256000, in: 2, out: 6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier'] },
-      { id: 'mistral-medium-3', display: 'Mistral Medium 3', context: 128000, in: 0.5, out: 2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['balanced'] },
-      { id: 'mistral-small-3', display: 'Mistral Small 3', context: 128000, in: 0.1, out: 0.3, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cheap'] },
-      { id: 'codestral-2', display: 'Codestral 2', context: 256000, in: 0.5, out: 1.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code'] },
-      { id: 'mistral-embed-2', display: 'Mistral Embed 2', context: 8192, in: 0.05, out: 0, capabilities: ['embeddings'], status: 'GA', tags: ['embedding'] },
+      { id: 'mistral-large-latest', display: 'Mistral Large Latest', context: 128000, in: 2, out: 6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier'] },
+      { id: 'mistral-medium-latest', display: 'Mistral Medium Latest', context: 128000, in: 0.5, out: 2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['balanced'] },
+      { id: 'mistral-small-latest', display: 'Mistral Small Latest', context: 32000, in: 0.1, out: 0.3, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cheap'] },
+      { id: 'magistral-medium-latest', display: 'Magistral Medium Latest', context: 128000, in: 2, out: 5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['reasoning'] },
+      { id: 'codestral-latest', display: 'Codestral Latest', context: 256000, in: 0.3, out: 0.9, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code'] },
+      { id: 'devstral-small-latest', display: 'Devstral Small Latest', context: 128000, in: 0.1, out: 0.3, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code', 'agent'] },
+      { id: 'pixtral-large-latest', display: 'Pixtral Large Latest', context: 128000, in: 2, out: 6, capabilities: ['chat', 'vision', 'streaming'], status: 'GA', tags: ['vision'] },
+      { id: 'mistral-embed', display: 'Mistral Embed', context: 8192, in: 0.1, out: 0, capabilities: ['embeddings'], status: 'GA', tags: ['embedding'] },
     ],
   },
   {
@@ -140,9 +217,9 @@ const registry = [
     docsUrl: 'https://platform.deepseek.com/docs',
     status: 'implemented',
     models: [
-      { id: 'deepseek-v4', display: 'DeepSeek V4', context: 256000, in: 0.27, out: 1.1, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'cheap'] },
-      { id: 'deepseek-v4-coder', display: 'DeepSeek V4 Coder', context: 256000, in: 0.27, out: 1.1, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code'] },
-      { id: 'deepseek-r2', display: 'DeepSeek R2', context: 128000, in: 0.55, out: 2.2, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['reasoning'] },
+      { id: 'deepseek-chat', display: 'DeepSeek Chat', context: 64000, in: 0.27, out: 1.1, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['official', 'cheap'] },
+      { id: 'deepseek-reasoner', display: 'DeepSeek Reasoner', context: 64000, in: 0.55, out: 2.2, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['official', 'reasoning'] },
+      { id: 'deepseek-coder', display: 'DeepSeek Coder', context: 64000, in: 0.27, out: 1.1, capabilities: ['chat', 'tools', 'streaming'], status: 'legacy', tags: ['code'] },
     ],
   },
   {
@@ -156,11 +233,15 @@ const registry = [
     docsUrl: 'https://console.groq.com/docs',
     status: 'implemented',
     models: [
-      { id: 'llama-4-405b', display: 'Llama 4 405B', context: 128000, in: 1.5, out: 1.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'open'] },
-      { id: 'llama-4-70b', display: 'Llama 4 70B', context: 128000, in: 0.4, out: 0.4, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
-      { id: 'llama-4-8b', display: 'Llama 4 8B', context: 128000, in: 0.05, out: 0.05, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['fast', 'cheap'] },
-      { id: 'qwen-3-72b', display: 'Qwen 3 72B', context: 128000, in: 0.5, out: 0.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
-      { id: 'whisper-large-v4', display: 'Whisper Large v4', context: 0, in: null, out: null, capabilities: ['audio'], status: 'GA', tags: ['speech'] },
+      { id: 'llama-3.3-70b-versatile', display: 'Llama 3.3 70B Versatile', context: 128000, in: 0.59, out: 0.79, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'open'] },
+      { id: 'llama-3.1-8b-instant', display: 'Llama 3.1 8B Instant', context: 128000, in: 0.05, out: 0.08, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['fast', 'cheap'] },
+      { id: 'meta-llama/llama-4-scout-17b-16e-instruct', display: 'Llama 4 Scout 17B 16E', context: 128000, in: 0.11, out: 0.34, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'open'] },
+      { id: 'meta-llama/llama-4-maverick-17b-128e-instruct', display: 'Llama 4 Maverick 17B 128E', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['open'] },
+      { id: 'deepseek-r1-distill-llama-70b', display: 'DeepSeek R1 Distill Llama 70B', context: 128000, in: 0.75, out: 0.99, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['reasoning'] },
+      { id: 'qwen/qwen3-32b', display: 'Qwen3 32B', context: 128000, in: 0.29, out: 0.59, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast'] },
+      { id: 'moonshotai/kimi-k2-instruct', display: 'Kimi K2 Instruct', context: 128000, in: 1.0, out: 3.0, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['agent'] },
+      { id: 'openai/gpt-oss-120b', display: 'GPT OSS 120B', context: 128000, in: 0.15, out: 0.75, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['open'] },
+      { id: 'whisper-large-v3-turbo', display: 'Whisper Large v3 Turbo', context: 0, in: null, out: null, capabilities: ['audio'], status: 'GA', tags: ['speech'] },
     ],
   },
   {
@@ -226,6 +307,7 @@ const registry = [
       { id: 'openrouter/auto', display: 'OpenRouter Auto', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['router'] },
       { id: 'anthropic/claude-opus-4.7', display: 'Claude Opus 4.7 via OR', context: 500000, in: 12, out: 60, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['frontier'] },
       { id: 'openai/gpt-5.5', display: 'GPT-5.5 via OR', context: 1000000, in: 4, out: 12, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['frontier'] },
+      { id: 'openai/gpt-5-codex', display: 'GPT-5 Codex via OR', context: 400000, in: 1.25, out: 10, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code', 'codex'] },
       { id: 'google/gemini-3.0-pro', display: 'Gemini 3.0 Pro via OR', context: 2000000, in: 2.5, out: 10, capabilities: ['chat', 'vision', 'tools', 'streaming'], status: 'GA', tags: ['multimodal'] },
     ],
   },
@@ -481,8 +563,13 @@ const registry = [
     docsUrl: 'https://platform.moonshot.ai/docs',
     status: 'implemented',
     models: [
-      { id: 'kimi-k2', display: 'Kimi K2', context: 1000000, in: 1.0, out: 3.0, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['long-context'] },
-      { id: 'kimi-k1.5', display: 'Kimi K1.5', context: 1000000, in: 0.5, out: 1.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['long-context'] },
+      { id: 'kimi-k2.6', display: 'Kimi K2.6', context: 256000, in: 1.2, out: 3.6, capabilities: ['chat', 'tools', 'streaming'], status: 'latest', tags: ['frontier', 'agentic'] },
+      { id: 'kimi-k2-turbo-preview', display: 'Kimi K2 Turbo Preview', context: 256000, in: 1.2, out: 3.6, capabilities: ['chat', 'tools', 'streaming'], status: 'preview', tags: ['fast', 'agentic'] },
+      { id: 'kimi-k2-0905-preview', display: 'Kimi K2 0905 Preview', context: 256000, in: 1.0, out: 3.0, capabilities: ['chat', 'tools', 'streaming'], status: 'preview', tags: ['agentic'] },
+      { id: 'kimi-k2-0711-preview', display: 'Kimi K2 0711 Preview', context: 128000, in: 1.0, out: 3.0, capabilities: ['chat', 'tools', 'streaming'], status: 'legacy', tags: ['agentic'] },
+      { id: 'moonshot-v1-128k', display: 'Moonshot v1 128K', context: 128000, in: 1.0, out: 3.0, capabilities: ['chat', 'tools', 'streaming'], status: 'stable', tags: ['long-context'] },
+      { id: 'moonshot-v1-32k', display: 'Moonshot v1 32K', context: 32000, in: 0.5, out: 1.5, capabilities: ['chat', 'streaming'], status: 'stable', tags: ['long-context'] },
+      { id: 'moonshot-v1-8k', display: 'Moonshot v1 8K', context: 8000, in: 0.2, out: 1.0, capabilities: ['chat', 'streaming'], status: 'stable', tags: ['legacy'] },
     ],
   },
   {
@@ -495,9 +582,12 @@ const registry = [
     capabilities: ['chat', 'tools', 'streaming'],
     docsUrl: 'https://mimo.xiaomi.com',
     status: 'metadata-only',
-    notes: 'Asia-Pacific only at launch.',
+    notes: 'Public hosted API availability is region-dependent; open-model IDs are included for provider/aggregator mapping.',
     models: [
-      { id: 'mimo-7b-rl', display: 'MiMo 7B RL', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['reasoning'] },
+      { id: 'XiaomiMiMo/MiMo-7B-RL', display: 'MiMo 7B RL', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['reasoning', 'open-model'] },
+      { id: 'XiaomiMiMo/MiMo-7B-RL-Zero', display: 'MiMo 7B RL Zero', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['reasoning', 'open-model'] },
+      { id: 'XiaomiMiMo/MiMo-7B-SFT', display: 'MiMo 7B SFT', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['open-model'] },
+      { id: 'XiaomiMiMo/MiMo-7B-Base', display: 'MiMo 7B Base', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['base', 'open-model'] },
     ],
   },
   {
@@ -1106,7 +1196,12 @@ const registry = [
     docsUrl: 'https://www.minimax.io/api-doc',
     status: 'metadata-only',
     models: [
-      { id: 'abab7-chat-pro', display: 'abab7 Chat Pro', context: 256000, in: 1, out: 3, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['cn'] },
+      { id: 'MiniMax-M1', display: 'MiniMax M1', context: 1000000, in: 0.6, out: 2.4, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'reasoning', 'agent'] },
+      { id: 'MiniMax-Text-01', display: 'MiniMax Text 01', context: 1000000, in: 0.4, out: 1.2, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['long-context'] },
+      { id: 'MiniMax-VL-01', display: 'MiniMax VL 01', context: 256000, in: 0.4, out: 1.2, capabilities: ['chat', 'vision', 'streaming'], status: 'GA', tags: ['vision', 'multimodal'] },
+      { id: 'minimax-m2', display: 'MiniMax M2', context: 1000000, in: 0.6, out: 2.4, capabilities: ['chat', 'tools', 'streaming'], status: 'legacy', tags: ['agent'] },
+      { id: 'minimax-voice-01', display: 'MiniMax Voice 01', context: 128000, in: null, out: null, capabilities: ['audio', 'streaming'], status: 'GA', tags: ['voice'] },
+      { id: 'abab6.5s-chat', display: 'abab6.5s Chat', context: 245760, in: 0.3, out: 0.9, capabilities: ['chat', 'streaming'], status: 'legacy', tags: ['cn'] },
     ],
   },
   {
@@ -1120,8 +1215,10 @@ const registry = [
     docsUrl: 'https://open.bigmodel.cn/dev/api',
     status: 'metadata-only',
     models: [
-      { id: 'glm-5', display: 'GLM-5', context: 256000, in: 1.2, out: 3.6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cn'] },
+      { id: 'glm-5', display: 'GLM-5', context: 256000, in: 1.2, out: 3.6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'cn'] },
       { id: 'glm-5-air', display: 'GLM-5 Air', context: 128000, in: 0.2, out: 0.6, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['cn', 'cheap'] },
+      { id: 'glm-4.6', display: 'GLM-4.6', context: 200000, in: 0.8, out: 2.4, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['stable'] },
+      { id: 'glm-4.5', display: 'GLM-4.5', context: 128000, in: 0.5, out: 1.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['legacy'] },
     ],
   },
   {
@@ -1163,9 +1260,16 @@ const registry = [
     docsUrl: 'https://help.aliyun.com/zh/dashscope/',
     status: 'implemented',
     models: [
-      { id: 'qwen3-max', display: 'Qwen3-Max', context: 1000000, in: 1.5, out: 4.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cn'] },
-      { id: 'qwen3-plus', display: 'Qwen3-Plus', context: 256000, in: 0.5, out: 1.5, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cn'] },
-      { id: 'qwen3-coder', display: 'Qwen3-Coder', context: 256000, in: 0.4, out: 1.2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code'] },
+      { id: 'qwen-max', display: 'Qwen Max', context: 1000000, in: 2, out: 6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'cn'] },
+      { id: 'qwen-max-latest', display: 'Qwen Max Latest', context: 1000000, in: 2, out: 6, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier', 'cn'] },
+      { id: 'qwen-plus', display: 'Qwen Plus', context: 1000000, in: 0.4, out: 1.2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['cn'] },
+      { id: 'qwen-turbo', display: 'Qwen Turbo', context: 1000000, in: 0.05, out: 0.2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['fast', 'cheap'] },
+      { id: 'qwen-long', display: 'Qwen Long', context: 10000000, in: 0.02, out: 0.2, capabilities: ['chat', 'streaming'], status: 'GA', tags: ['long-context'] },
+      { id: 'qwen3-235b-a22b', display: 'Qwen3 235B A22B', context: 262144, in: 0.6, out: 2.4, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['open'] },
+      { id: 'qwen3-32b', display: 'Qwen3 32B', context: 131072, in: 0.2, out: 0.8, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['open'] },
+      { id: 'qwen3-coder-plus', display: 'Qwen3 Coder Plus', context: 1000000, in: 0.4, out: 1.2, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['code'] },
+      { id: 'qwen-vl-max', display: 'Qwen VL Max', context: 128000, in: 1.0, out: 3.0, capabilities: ['chat', 'vision', 'streaming'], status: 'GA', tags: ['vision'] },
+      { id: 'qwen-vl-plus', display: 'Qwen VL Plus', context: 128000, in: 0.25, out: 0.75, capabilities: ['chat', 'vision', 'streaming'], status: 'GA', tags: ['vision'] },
     ],
   },
   {
@@ -1524,7 +1628,7 @@ const registry = [
   },
   {
     id: 'aleph-alpha-pharia',
-    name: 'Pharia (Aleph Alpha) — OpenAI bridge',
+    name: 'Pharia (Aleph Alpha) - OpenAI bridge',
     category: 'cloud',
     format: 'openai-compatible',
     baseUrl: 'https://api.aleph-alpha.com/openai/v1',
@@ -1551,6 +1655,62 @@ const registry = [
       { id: 'glm-4.5-pro', display: 'GLM-4.5 Pro', context: 256000, in: 1, out: 4, capabilities: ['chat', 'tools', 'streaming'], status: 'GA', tags: ['frontier'] },
     ],
   },
+
+  {
+    id: 'mimo',
+    name: 'Mimo AI',
+    category: 'cloud',
+    format: 'openai-compatible',
+    baseUrl: 'https://api.mimo.ai/v1',
+    authType: 'oauth',
+    capabilities: ['chat', 'tools', 'streaming'],
+    docsUrl: 'https://mimo.org',
+    status: 'planned',
+    notes: 'Account/OAuth-style provider placeholder for quota-based access. Enable after official endpoint details are configured.',
+    models: [
+      { id: 'mimo-agent-pro', display: 'Mimo Agent Pro', context: 256000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'planned', tags: ['agent', 'oauth'] },
+      { id: 'mimo-agent-lite', display: 'Mimo Agent Lite', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'planned', tags: ['agent', 'oauth'] },
+    ],
+  },
+  {
+    id: 'kiro',
+    name: 'Kiro',
+    category: 'oauth',
+    format: 'kiro-account',
+    baseUrl: 'https://codewhisperer.us-east-1.amazonaws.com',
+    authType: 'oauth-connected',
+    capabilities: ['chat', 'tools', 'streaming'],
+    docsUrl: 'https://kiro.dev',
+    status: 'implemented',
+    notes: 'Uses a connected Kiro IDE refresh token or Kiro account callback. Defaults mirror current 9router Kiro models, with Claude Opus 4.7 included as a manual test candidate because upstream users report it can work when added manually.',
+    models: [
+      { id: 'claude-opus-4.7', display: 'Claude Opus 4.7', context: 256000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'manual-test', tags: ['claude', 'opus', 'manual-candidate', 'oauth'] },
+      { id: 'claude-opus-4.6 thinking', display: 'Claude Opus 4.6 Thinking', context: 256000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'manual-test', tags: ['claude', 'opus', 'thinking', 'manual-candidate', 'oauth'] },
+      { id: 'claude-opus-4.6', display: 'Claude Opus 4.6', context: 256000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'manual-test', tags: ['claude', 'opus', 'manual-candidate', 'oauth'] },
+      { id: 'claude-sonnet-4.5', display: 'Claude Sonnet 4.5', context: 256000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['claude', 'sonnet', 'oauth'] },
+      { id: 'claude-haiku-4.5', display: 'Claude Haiku 4.5', context: 200000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['claude', 'haiku', 'oauth'] },
+      { id: 'deepseek-3.2', display: 'DeepSeek 3.2', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['code', 'strip-image-audio', 'oauth'] },
+      { id: 'qwen3-coder-next', display: 'Qwen3 Coder Next', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['code', 'qwen', 'strip-image-audio', 'oauth'] },
+      { id: 'glm-5', display: 'GLM 5', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['glm', 'oauth'] },
+      { id: 'MiniMax-M2.5', display: 'MiniMax M2.5', context: 128000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'oauth', tags: ['minimax', 'oauth'] },
+    ],
+  },
+  {
+    id: 'antigravity',
+    name: 'Google Antigravity',
+    category: 'cloud',
+    format: 'openai-compatible',
+    baseUrl: 'https://antigravity.google.com',
+    authType: 'oauth',
+    capabilities: ['chat', 'tools', 'streaming'],
+    docsUrl: 'https://antigravity.google.com',
+    status: 'planned',
+    notes: 'Account-login provider placeholder for Antigravity-style coding quota access.',
+    models: [
+      { id: 'antigravity-agent', display: 'Antigravity Agent', context: 1000000, in: null, out: null, capabilities: ['chat', 'tools', 'streaming'], status: 'planned', tags: ['code', 'agent', 'oauth'] },
+      { id: 'antigravity-gemini', display: 'Antigravity Gemini', context: 2000000, in: null, out: null, capabilities: ['chat', 'tools', 'vision', 'streaming'], status: 'planned', tags: ['gemini', 'oauth'] },
+    ],
+  },
   {
     id: 'iflytek-spark',
     name: 'iFlytek Spark',
@@ -1567,7 +1727,7 @@ const registry = [
   },
 ];
 
-export const PROVIDER_CATEGORIES = ['cloud', 'aggregator', 'serverless', 'local', 'image', 'embeddings', 'audio', 'custom'];
+export const PROVIDER_CATEGORIES = ['cloud', 'oauth', 'aggregator', 'serverless', 'local', 'image', 'embeddings', 'audio', 'custom'];
 
 export const ALL_CAPABILITIES = ['chat', 'completion', 'embeddings', 'image', 'vision', 'audio', 'rerank', 'tools', 'streaming'];
 

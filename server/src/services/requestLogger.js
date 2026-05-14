@@ -1,15 +1,16 @@
 import db from '../db/connection.js';
 import { prefixedId } from '../lib/id.js';
+import { hasUnknownPricing } from './costCalculator.js';
 import { config } from '../config.js';
 import { preview as previewText } from './tokenizer.js';
 import crypto from 'node:crypto';
 
 const insertLog = db.prepare(`
   INSERT INTO request_logs (
-    id, ts, app_id, app_name, unified_key_id, route_id, route_alias, provider_id, model, requested_model,
+    id, ts, app_id, app_name, unified_key_id, oauth_account_id, route_id, route_alias, provider_id, model, requested_model,
     input_tokens, output_tokens, total_tokens, estimated_cost, latency_ms, status, error_reason,
     fallback_chain, prompt_preview, response_preview, endpoint, streaming, request_id
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const insertFallback = db.prepare(`
@@ -53,6 +54,7 @@ export function logRequest(entry) {
     entry.appId || null,
     entry.appName || null,
     entry.unifiedKeyId || null,
+    entry.oauthAccountId || null,
     entry.routeId || null,
     entry.routeAlias || null,
     entry.providerId || null,
@@ -72,7 +74,8 @@ export function logRequest(entry) {
     entry.streaming ? 1 : 0,
     entry.requestId || id,
   );
-  if (entry.providerId && entry.model) {
+  const shouldCountUsage = entry.providerId && entry.model && entry.errorReason !== 'provider_missing';
+  if (shouldCountUsage) {
     upsertUsageDaily.run(
       day,
       entry.providerId,
@@ -123,7 +126,7 @@ export function listLogs({ limit = 100, offset = 0, providerId, appId, status, s
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const rows = db.prepare(`
     SELECT id, ts, app_id AS appId, app_name AS appName, unified_key_id AS unifiedKeyId,
-           route_id AS routeId, route_alias AS routeAlias, provider_id AS providerId,
+           oauth_account_id AS oauthAccountId, route_id AS routeId, route_alias AS routeAlias, provider_id AS providerId,
            model, requested_model AS requestedModel, input_tokens AS inputTokens,
            output_tokens AS outputTokens, total_tokens AS totalTokens,
            estimated_cost AS estimatedCost, latency_ms AS latencyMs, status,
@@ -135,7 +138,11 @@ export function listLogs({ limit = 100, offset = 0, providerId, appId, status, s
     ORDER BY ts DESC
     LIMIT ? OFFSET ?
   `).all(...params, limit, offset);
-  return rows.map((r) => ({ ...r, fallbackChain: safeJson(r.fallbackChain, []) }));
+  return rows.map((r) => ({
+    ...r,
+    fallbackChain: safeJson(r.fallbackChain, []),
+    costIncomplete: r.providerId && r.model ? hasUnknownPricing({ providerId: r.providerId, model: r.model }) : false,
+  }));
 }
 
 export function pruneOldLogs() {

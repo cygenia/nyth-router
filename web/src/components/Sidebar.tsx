@@ -2,24 +2,27 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Icons, IconName } from '../lib/icons';
 import { api, session } from '../lib/api';
+import { NythLogo } from './NythLogo';
+import { usePreferences } from '../lib/preferences';
 
-type NavItem = { to: string; label: string; icon: IconName; group?: string };
+type NavItem = { to: string; labelKey: string; icon: IconName; group?: string };
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Overview', icon: 'Home', group: 'Workspace' },
-  { to: '/providers', label: 'Providers', icon: 'Plug', group: 'Workspace' },
-  { to: '/routes', label: 'Routes', icon: 'Route', group: 'Workspace' },
-  { to: '/playground', label: 'Playground', icon: 'Beaker', group: 'Workspace' },
-  { to: '/usage', label: 'Usage', icon: 'TrendingUp', group: 'Insights' },
-  { to: '/logs', label: 'Logs', icon: 'ListChecks', group: 'Insights' },
-  { to: '/api-keys', label: 'API keys', icon: 'KeyRound', group: 'Auth' },
-  { to: '/oauth/login', label: 'OAuth login', icon: 'ShieldCheck', group: 'Auth' },
-  { to: '/oauth/manage', label: 'OAuth apps', icon: 'Crown', group: 'Auth' },
-  { to: '/auth-json', label: 'Auth JSON', icon: 'Code2', group: 'Auth' },
-  { to: '/settings', label: 'Settings', icon: 'Settings2', group: 'System' },
+  { to: '/', labelKey: 'home', icon: 'Home', group: 'workspace' },
+  { to: '/overview', labelKey: 'overview', icon: 'BookText', group: 'workspace' },
+  { to: '/providers', labelKey: 'apiProviders', icon: 'Plug', group: 'workspace' },
+  { to: '/routes', labelKey: 'routes', icon: 'Route', group: 'workspace' },
+  { to: '/playground', labelKey: 'playground', icon: 'Beaker', group: 'workspace' },
+  { to: '/usage', labelKey: 'usage', icon: 'TrendingUp', group: 'insights' },
+  { to: '/logs', labelKey: 'logs', icon: 'ListChecks', group: 'insights' },
+  { to: '/api-keys', labelKey: 'apiKeys', icon: 'KeyRound', group: 'auth' },
+  { to: '/oauth/login', labelKey: 'oauthLogin', icon: 'ShieldCheck', group: 'auth' },
+  { to: '/oauth/manage', labelKey: 'oauthApps', icon: 'Crown', group: 'auth' },
+  { to: '/auth-json', labelKey: 'authJson', icon: 'Code2', group: 'auth' },
+  { to: '/settings', labelKey: 'settings', icon: 'Settings2', group: 'system' },
 ];
 
-const groupOrder = ['Workspace', 'Insights', 'Auth', 'System'];
+const groupOrder = ['workspace', 'insights', 'auth', 'system'];
 
 interface Props {
   open: boolean;
@@ -28,6 +31,7 @@ interface Props {
 
 export function Sidebar({ open, onClose }: Props) {
   const navigate = useNavigate();
+  const { t } = usePreferences();
 
   async function logout() {
     try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
@@ -46,16 +50,16 @@ export function Sidebar({ open, onClose }: Props) {
       )}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-ink-950/80 px-4 pb-4 pt-6
-          backdrop-blur-2xl transition-transform duration-300 ease-out
+          sidebar-shell fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-ink-950/80 px-4 pb-4 pt-6
+          backdrop-blur-md transition-transform duration-300 ease-out
           ${open ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0
         `}
       >
         <div className="flex items-center gap-3 px-2 pb-6">
-          <Logo />
+          <NythLogo size="sm" />
           <div>
-            <div className="font-display text-lg font-semibold tracking-tight text-ink-50">Bigliner</div>
-            <div className="text-[11px] uppercase tracking-[0.22em] text-ink-300">AI gateway</div>
+            <div className="font-display text-lg font-semibold tracking-tight text-ink-50">Nyth</div>
+            <div className="text-[11px] tracking-[0.14em] text-ink-300">ready for work</div>
           </div>
           <button
             type="button"
@@ -70,7 +74,7 @@ export function Sidebar({ open, onClose }: Props) {
           {groupOrder.map((group) => (
             <div key={group}>
               <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-ink-300/70">
-                {group}
+                {t(group)}
               </div>
               <ul className="space-y-1">
                 {NAV.filter((n) => n.group === group).map((item) => {
@@ -103,7 +107,7 @@ export function Sidebar({ open, onClose }: Props) {
                                 isActive ? 'text-aurora-violet' : 'text-ink-300 group-hover:text-aurora-mint'
                               }`}
                             />
-                            <span className="relative">{item.label}</span>
+                            <span className="relative">{t(item.labelKey)}</span>
                           </>
                         )}
                       </NavLink>
@@ -115,28 +119,31 @@ export function Sidebar({ open, onClose }: Props) {
           ))}
         </nav>
         <div className="mt-4 space-y-3 px-2">
-          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-aurora-violet/15 via-aurora-sky/10 to-transparent p-4 text-sm text-ink-100">
-            <div className="font-semibold">Private by default</div>
+          <NavLink
+            to="/about"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition ${
+                isActive
+                  ? 'bg-gradient-to-r from-aurora-violet/20 via-aurora-pink/15 to-aurora-sky/20 text-ink-50 shadow-[0_8px_24px_-12px_rgba(188,165,255,0.65)]'
+                  : 'text-ink-200 hover:bg-white/5 hover:text-ink-50'
+              }`
+            }
+          >
+            <Icons.Info className="h-4 w-4 text-ink-300 group-hover:text-aurora-mint" />
+            <span>{t('about')}</span>
+          </NavLink>
+          <div className="sidebar-card rounded-2xl border border-white/10 bg-gradient-to-br from-aurora-violet/15 via-aurora-sky/10 to-transparent p-4 text-sm text-ink-100">
+            <div className="font-semibold">{t('privateByDefault')}</div>
             <p className="mt-1 text-xs text-ink-300">
-              Provider keys stay encrypted at rest with your master key.
+              {t('encryptedProviderKeys')}
             </p>
           </div>
           <button onClick={logout} className="w-full text-left text-xs text-ink-300 hover:text-aurora-rose">
-            Sign out
+            {t('signOut')}
           </button>
         </div>
       </aside>
     </>
-  );
-}
-
-function Logo() {
-  return (
-    <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-aurora-rose via-aurora-violet to-aurora-sky shadow-glow">
-      <div className="absolute inset-[2px] rounded-2xl bg-ink-950/70 backdrop-blur" />
-      <div className="absolute inset-0 grid place-items-center">
-        <Icons.Hexagon className="h-4 w-4 text-aurora-mint" />
-      </div>
-    </div>
   );
 }

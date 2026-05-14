@@ -2,7 +2,7 @@ import db from '../db/connection.js';
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import { sessionToken, prefixedId, unifiedKey, appToken, clientSecret } from '../lib/id.js';
-import { hashPassword, verifyPassword, maskSecret } from '../lib/crypto.js';
+import { hashPassword, verifyPassword, maskSecret, encryptSecret, decryptSecret } from '../lib/crypto.js';
 
 const settingsGet = db.prepare('SELECT value FROM settings WHERE key = ?');
 const settingsUpsert = db.prepare(`
@@ -29,7 +29,7 @@ export function setDashboardPassword(plain) {
 }
 
 export function ensureDefaultPassword() {
-  // If no password is stored but BIGLINER_PASSWORD is set, seed it.
+  // If no password is stored but NYTH_PASSWORD is set, seed it.
   const existing = getDashboardPasswordHash();
   if (existing) return;
   if (config.password) {
@@ -48,24 +48,44 @@ export function checkDashboardPassword(plain) {
   return verifyPassword(plain, hash);
 }
 
-export function createSession() {
+export const DASHBOARD_SESSION_DURATIONS = Object.freeze({
+  never: 1000 * 60 * 5,
+  '30m': 1000 * 60 * 30,
+  '1h': 1000 * 60 * 60,
+  '6h': 1000 * 60 * 60 * 6,
+  '24h': 1000 * 60 * 60 * 24,
+  remember: null,
+});
+
+export function normalizeSessionDuration(duration) {
+  return Object.hasOwn(DASHBOARD_SESSION_DURATIONS, duration) ? duration : 'remember';
+}
+
+function sessionExpiresAt(duration) {
+  const ttl = DASHBOARD_SESSION_DURATIONS[duration];
+  return ttl === null ? null : Date.now() + ttl;
+}
+
+export function createSession(duration = 'remember') {
+  const normalizedDuration = normalizeSessionDuration(duration);
   const id = sessionToken();
-  const expiresAt = Date.now() + config.sessionTtlMs;
-  db.prepare('INSERT INTO sessions (id, expires_at, created_at) VALUES (?, ?, ?)').run(id, expiresAt, Date.now());
-  return { id, expiresAt };
+  const expiresAt = sessionExpiresAt(normalizedDuration);
+  db.prepare('INSERT INTO sessions (id, expires_at, duration, created_at) VALUES (?, ?, ?, ?)').run(id, expiresAt, normalizedDuration, Date.now());
+  return { id, expiresAt, duration: normalizedDuration };
 }
 
 export function touchSession(id) {
   if (!id) return null;
-  const row = db.prepare('SELECT expires_at FROM sessions WHERE id = ?').get(id);
+  const row = db.prepare('SELECT expires_at, duration FROM sessions WHERE id = ?').get(id);
   if (!row) return null;
-  if (row.expires_at < Date.now()) {
+  if (row.expires_at !== null && row.expires_at < Date.now()) {
     db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
     return null;
   }
-  const next = Date.now() + config.sessionTtlMs;
+  const duration = normalizeSessionDuration(row.duration);
+  const next = sessionExpiresAt(duration);
   db.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?').run(next, id);
-  return { id, expiresAt: next };
+  return { id, expiresAt: next, duration };
 }
 
 export function deleteSession(id) {
@@ -177,33 +197,39 @@ export function findAppByToken(token) {
   };
 }
 
-// ---------- Unified Bigliner API keys ----------
+// ---------- Unified Nyth Router API keys ----------
 
 export function listUnifiedKeys() {
   return db.prepare(`
-    SELECT id, label, key_prefix AS keyPrefix, rate_limit_per_min AS rateLimitPerMin,
+    SELECT id, label, key_prefix AS keyPrefix, masked_key AS maskedKey,
+           rate_limit_per_min AS rateLimitPerMin,
            allowed_routes AS allowedRoutes, allowed_models AS allowedModels, enabled,
            last_used_at AS lastUsedAt, created_at AS createdAt, updated_at AS updatedAt
     FROM unified_api_keys ORDER BY created_at DESC
   `).all().map((row) => ({
     ...row,
+    maskedKey: row.maskedKey || `${row.keyPrefix}••••`,
     allowedRoutes: safeJson(row.allowedRoutes, []),
     allowedModels: safeJson(row.allowedModels, []),
   }));
 }
 
-export function createUnifiedKey({ label, rateLimitPerMin, allowedRoutes, allowedModels }) {
-  const t = unifiedKey();
+export function createUnifiedKey({ label, customKey, rateLimitPerMin, allowedRoutes, allowedModels }) {
+  const candidate = String(customKey || '').trim();
+  const t = candidate || unifiedKey();
+  if (candidate && candidate.length < 12) throw new Error('custom_key_min_12_chars');
   const id = prefixedId('uk');
   const now = Date.now();
   db.prepare(`
-    INSERT INTO unified_api_keys (id, label, key_hash, key_prefix, rate_limit_per_min, allowed_routes, allowed_models, enabled, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    INSERT INTO unified_api_keys (id, label, key_hash, key_prefix, encrypted_key, masked_key, rate_limit_per_min, allowed_routes, allowed_models, enabled, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
   `).run(
     id,
-    label || 'Default unified key',
+    label || candidate || 'Default unified key',
     sha256(t),
     t.slice(0, 8),
+    encryptSecret(t),
+    maskSecret(t),
     rateLimitPerMin || null,
     JSON.stringify(allowedRoutes || []),
     JSON.stringify(allowedModels || []),
@@ -216,10 +242,18 @@ export function createUnifiedKey({ label, rateLimitPerMin, allowedRoutes, allowe
 export function rotateUnifiedKey(id) {
   const t = unifiedKey();
   db.prepare(`
-    UPDATE unified_api_keys SET key_hash = ?, key_prefix = ?, updated_at = ?
+    UPDATE unified_api_keys SET key_hash = ?, key_prefix = ?, encrypted_key = ?, masked_key = ?, updated_at = ?
     WHERE id = ?
-  `).run(sha256(t), t.slice(0, 8), Date.now(), id);
+  `).run(sha256(t), t.slice(0, 8), encryptSecret(t), maskSecret(t), Date.now(), id);
   return { id, key: t, prefix: t.slice(0, 8), masked: maskSecret(t) };
+}
+
+export function revealUnifiedKey(id) {
+  const row = db.prepare('SELECT id, encrypted_key AS encryptedKey FROM unified_api_keys WHERE id = ? AND enabled = 1').get(id);
+  if (!row || !row.encryptedKey) return null;
+  const key = decryptSecret(row.encryptedKey);
+  if (!key) return null;
+  return { id: row.id, key, prefix: key.slice(0, 8), masked: maskSecret(key) };
 }
 
 export function revokeUnifiedKey(id) {

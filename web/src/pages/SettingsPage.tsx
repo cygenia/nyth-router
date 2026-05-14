@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Page } from '../components/Page';
 import { Skeleton } from '../components/Skeleton';
+import { Dropdown } from '../components/Dropdown';
 import { Icons } from '../lib/icons';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
 
 const PROMPT_LOG_MODES = [
-  { value: 'off', label: 'Off — no prompt content stored' },
-  { value: 'metadata', label: 'Metadata only — no preview' },
-  { value: 'preview', label: 'Preview — short snippet (default)' },
-  { value: 'full', label: 'Full — keep full content' },
+  { value: 'off', label: 'Off - no prompt content stored' },
+  { value: 'metadata', label: 'Metadata only - no preview' },
+  { value: 'preview', label: 'Preview - short snippet (default)' },
+  { value: 'full', label: 'Full - keep full content' },
 ];
 
 const TOKEN_SAVER_MODES = [
-  { value: 'safe', label: 'Safe — light compression, safest formatting' },
-  { value: 'balanced', label: 'Balanced — stronger compression for normal use' },
-  { value: 'aggressive', label: 'Aggressive — maximum savings for noisy output' },
+  { value: 'safe', label: 'Safe - light compression, safest formatting' },
+  { value: 'balanced', label: 'Balanced - stronger compression for normal use' },
+  { value: 'aggressive', label: 'Aggressive - maximum savings for noisy output' },
 ];
 
 export default function SettingsPage() {
@@ -41,6 +42,9 @@ export default function SettingsPage() {
       compressToolOutput: data.values.compressToolOutput !== 'false',
       compressAssistantOutput: data.values.compressAssistantOutput === 'true',
       maxToolOutputChars: Number(data.values.maxToolOutputChars || 12000),
+      streamKeepaliveSeconds: Number(data.values.streamKeepaliveSeconds || 15),
+      streamBootstrapRetries: Number(data.values.streamBootstrapRetries || 2),
+      nonStreamKeepaliveSeconds: Number(data.values.nonStreamKeepaliveSeconds || 15),
     });
   }
   useEffect(() => { load(); }, []);
@@ -82,7 +86,7 @@ export default function SettingsPage() {
   return (
     <Page
       title="Settings"
-      description="Configure routing defaults, privacy, retention, Token Saver, and dashboard auth."
+      description="Tune privacy, cleanup, routing, and sign-in preferences."
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="panel p-5">
@@ -132,6 +136,30 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
+
+      <section className="panel p-5">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-ink-50">Stream Resilience</h3>
+          <p className="text-xs text-ink-300">Controls how Nyth keeps slow generations connected while the upstream model is still preparing output.</p>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+          <div>
+            <label className="field-label">SSE heartbeat</label>
+            <input type="number" min={0} className="field-input mt-1" value={draft.streamKeepaliveSeconds ?? 15} onChange={(e) => setDraft({ ...draft, streamKeepaliveSeconds: Number(e.target.value || 0) })} />
+            <p className="mt-1 text-xs text-ink-400">Interval for tiny stream pings; use 0 when no heartbeat is needed.</p>
+          </div>
+          <div>
+            <label className="field-label">Startup retry budget</label>
+            <input type="number" min={0} className="field-input mt-1" value={draft.streamBootstrapRetries ?? 2} onChange={(e) => setDraft({ ...draft, streamBootstrapRetries: Number(e.target.value || 0) })} />
+            <p className="mt-1 text-xs text-ink-400">Extra attempts allowed while waiting for the provider to open the stream.</p>
+          </div>
+          <div>
+            <label className="field-label">Buffered response heartbeat</label>
+            <input type="number" min={0} className="field-input mt-1" value={draft.nonStreamKeepaliveSeconds ?? 15} onChange={(e) => setDraft({ ...draft, nonStreamKeepaliveSeconds: Number(e.target.value || 0) })} />
+            <p className="mt-1 text-xs text-ink-400">Keeps regular responses from going idle during long non-stream requests.</p>
+          </div>
+        </div>
+      </section>
 
       <section className="panel p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -184,8 +212,8 @@ export default function SettingsPage() {
       </div>
 
       <section className="panel p-5">
-        <h3 className="font-display text-lg font-semibold text-ink-50">Dashboard password</h3>
-        <p className="text-xs text-ink-300">Set or change the password used to sign into this dashboard. Minimum 15 characters.</p>
+        <h3 className="font-display text-lg font-semibold text-ink-50">Password</h3>
+        <p className="text-xs text-ink-300">Set or change the password for this space. Minimum 15 characters.</p>
         <form onSubmit={changePassword} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
             <label className="field-label">Current</label>
@@ -221,7 +249,7 @@ export default function SettingsPage() {
 
       <section className="panel p-5">
         <h3 className="font-display text-lg font-semibold text-aurora-rose">Danger zone</h3>
-        <p className="text-xs text-ink-300">Reset local user data. Provider registry and dashboard password are kept.</p>
+        <p className="text-xs text-ink-300">Reset local user data. Provider registry and password are kept.</p>
         <button onClick={reset} className="btn-danger mt-3 text-xs">
           <Icons.Trash2 className="h-3 w-3" /> Reset local database
         </button>
@@ -234,7 +262,7 @@ function Field({ label, value }: { label: string; value: any }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
       <div className="field-label text-[10px]">{label}</div>
-      <div className="break-all text-ink-100">{String(value ?? '—')}</div>
+      <div className="break-all text-ink-100">{String(value ?? '-')}</div>
     </div>
   );
 }

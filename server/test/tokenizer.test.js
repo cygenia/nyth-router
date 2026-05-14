@@ -10,7 +10,7 @@ test('estimateTokens handles empty inputs', () => {
 
 test('estimateTokens grows with input length', () => {
   const a = estimateTokens('hi');
-  const b = estimateTokens('hello world from bigliner');
+  const b = estimateTokens('hello world from nyth');
   const c = estimateTokens('a'.repeat(400));
   assert.ok(a > 0);
   assert.ok(b > a);

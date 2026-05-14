@@ -2,10 +2,10 @@ import db from '../db/connection.js';
 import { prefixedId } from '../lib/id.js';
 
 const ALIAS_DEFAULTS = {
-  'bigliner-fast': { strategy: 'fastest', description: 'Pick the lowest-latency available provider.' },
-  'bigliner-cheap': { strategy: 'cheapest', description: 'Pick the cheapest available model.' },
-  'bigliner-smart': { strategy: 'priority', description: 'Frontier model with sensible fallback.' },
-  'bigliner-vision': { strategy: 'priority', description: 'Multimodal-first route.' },
+  'nyth-fast': { strategy: 'fastest', description: 'Pick the lowest-latency available provider.' },
+  'nyth-cheap': { strategy: 'cheapest', description: 'Pick the cheapest available model.' },
+  'nyth-smart': { strategy: 'priority', description: 'Frontier model with sensible fallback.' },
+  'nyth-vision': { strategy: 'priority', description: 'Multimodal-first route.' },
 };
 
 export const STRATEGIES = ['priority', 'cheapest', 'fastest', 'capability'];
@@ -152,52 +152,53 @@ export function findDefaultRoute() {
 
 // resolveModel takes the request body's `model` string and produces a
 // list of route steps to attempt. Supported forms:
-//   - "providerId:modelId"        (prefix routing)
+//   - "providerId/modelId"        (canonical prefix routing)
 //   - "alias-name"                (matches a route alias)
 //   - "modelId"                   (uses default route or model lookup)
 export function resolveModel(modelString) {
-  if (!modelString) {
+  const normalizedModel = normalizeModelString(modelString);
+  if (!normalizedModel) {
     const def = findDefaultRoute();
     if (def) return { kind: 'route', route: def };
     return { kind: 'unresolved', requested: modelString };
   }
-  if (modelString.includes(':')) {
-    const [providerId, ...rest] = modelString.split(':');
+  if (normalizedModel.includes('/')) {
+    const [providerId, ...rest] = normalizedModel.split('/');
     return {
       kind: 'prefix',
       providerId,
-      modelId: rest.join(':'),
+      modelId: rest.join('/'),
       route: {
         id: 'inline',
-        alias: modelString,
-        name: `Inline prefix: ${modelString}`,
+        alias: normalizedModel,
+        name: `Inline prefix: ${normalizedModel}`,
         strategy: 'priority',
         conditions: {},
         steps: [
-          { stepIndex: 0, providerId, modelId: rest.join(':'), fallbackOn: ['error', 'rate_limit', 'timeout'] },
+          { stepIndex: 0, providerId, modelId: rest.join('/'), fallbackOn: ['error', 'rate_limit', 'timeout'] },
         ],
       },
     };
   }
-  const aliasRoute = findRouteByAlias(modelString);
+  const aliasRoute = findRouteByAlias(normalizedModel);
   if (aliasRoute) return { kind: 'alias', route: aliasRoute };
   // Treat as bare model id with default provider lookup
   const candidate = db.prepare(`
     SELECT provider_id AS providerId FROM models WHERE id = ?
-  `).get(modelString);
+  `).get(normalizedModel);
   if (candidate) {
     return {
       kind: 'model',
       providerId: candidate.providerId,
-      modelId: modelString,
+      modelId: normalizedModel,
       route: {
         id: 'inline',
-        alias: modelString,
-        name: `Inline model: ${modelString}`,
+        alias: normalizedModel,
+        name: `Inline model: ${normalizedModel}`,
         strategy: 'priority',
         conditions: {},
         steps: [
-          { stepIndex: 0, providerId: candidate.providerId, modelId: modelString, fallbackOn: ['error', 'rate_limit', 'timeout'] },
+          { stepIndex: 0, providerId: candidate.providerId, modelId: normalizedModel, fallbackOn: ['error', 'rate_limit', 'timeout'] },
         ],
       },
     };
@@ -207,16 +208,129 @@ export function resolveModel(modelString) {
   return { kind: 'unresolved', requested: modelString };
 }
 
+function normalizeModelString(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  // Accept UI/exported labels and legacy external-client forms as aliases,
+  // but always resolve to the canonical public model ref: providerId/modelId.
+  const commaMatch = raw.match(/^(.+?)\s*,\s*(.+)$/);
+  if (commaMatch) {
+    const providerId = resolveProviderAlias(commaMatch[1]);
+    const modelId = providerId ? resolveProviderModelAlias(providerId, commaMatch[2]) : '';
+    if (providerId && modelId) return `${providerId}/${modelId}`;
+  }
+
+  const separator = raw.includes(':') ? ':' : raw.includes('/') ? '/' : '';
+  if (separator) {
+    const [providerPart, ...rest] = raw.split(separator);
+    const providerId = resolveProviderAlias(providerPart);
+    const modelRaw = rest.join(separator);
+    const modelId = providerId ? resolveProviderModelAlias(providerId, modelRaw) : '';
+    if (providerId && modelId) return `${providerId}/${modelId}`;
+  }
+
+  return resolveBareModelAlias(raw) || raw;
+}
+
+function normalizeAliasText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/oauth|api|provider|models?|gateway|via/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+function resolveProviderAlias(value) {
+  const rawKey = String(value || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+  const exactAliases = {
+    'codex': 'codex',
+    'openai-codex': 'codex',
+    'claude-oauth': 'claude-oauth',
+    'anthropic-oauth': 'claude-oauth',
+    'claude-code': 'claude-oauth',
+    'gemini-oauth': 'gemini-oauth',
+    'google-oauth': 'gemini-oauth',
+    'gemini-cli': 'gemini-oauth',
+  };
+  if (exactAliases[rawKey]) return exactAliases[rawKey];
+
+  const normalized = normalizeAliasText(value);
+  if (!normalized) return '';
+  const staticAliases = {
+    'codex': 'codex',
+    'openai-codex': 'codex',
+    'openai-codex-account': 'codex',
+    'chatgpt-codex': 'codex',
+    'openai-oauth-codex': 'codex',
+    'claude': 'anthropic',
+    'anthropic-claude': 'anthropic',
+    'claude-code': 'claude-oauth',
+    'claude-oauth': 'claude-oauth',
+    'anthropic-oauth': 'claude-oauth',
+    'claude-code-oauth': 'claude-oauth',
+    'gemini': 'google',
+    'google-gemini': 'google',
+    'gemini-cli': 'gemini-oauth',
+    'gemini-oauth': 'gemini-oauth',
+    'google-oauth': 'gemini-oauth',
+    'gemini-cli-oauth': 'gemini-oauth',
+  };
+  if (staticAliases[normalized]) return staticAliases[normalized];
+
+  const row = db.prepare(`
+    SELECT id FROM providers
+    WHERE lower(id) = lower(?)
+       OR lower(replace(replace(name, ' OAuth', ''), ' API', '')) = lower(?)
+       OR lower(name) = lower(?)
+    LIMIT 1
+  `).get(value, value, value);
+  if (row?.id) return row.id;
+
+  const providers = db.prepare('SELECT id, name FROM providers').all();
+  return providers.find((p) => normalizeAliasText(p.id) === normalized || normalizeAliasText(p.name) === normalized)?.id || '';
+}
+
+function resolveProviderModelAlias(providerId, value) {
+  const raw = String(value || '').trim();
+  if (!providerId || !raw) return '';
+  const exact = db.prepare(`
+    SELECT id FROM models
+    WHERE provider_id = ? AND (lower(id) = lower(?) OR lower(display_name) = lower(?))
+    LIMIT 1
+  `).get(providerId, raw, raw);
+  if (exact?.id) return exact.id;
+
+  const normalized = normalizeAliasText(raw);
+  const models = db.prepare('SELECT id, display_name AS displayName FROM models WHERE provider_id = ?').all(providerId);
+  return models.find((m) => normalizeAliasText(m.id) === normalized || normalizeAliasText(m.displayName) === normalized)?.id || raw;
+}
+
+function resolveBareModelAlias(value) {
+  const raw = String(value || '').trim();
+  const exact = db.prepare(`
+    SELECT id FROM models WHERE lower(id) = lower(?) LIMIT 1
+  `).get(raw);
+  if (exact?.id) return exact.id;
+  const normalized = normalizeAliasText(raw);
+  const row = db.prepare('SELECT id, display_name AS displayName FROM models').all()
+    .find((m) => normalizeAliasText(m.id) === normalized || normalizeAliasText(m.displayName) === normalized);
+  return row?.id || '';
+}
+
 export function ensureDefaultRoutes() {
   const count = db.prepare('SELECT COUNT(*) AS c FROM routes').get().c;
   if (count > 0) return;
   // Seed sample aliases pointing at OpenAI/Anthropic/local lanes. These are
-  // safe even without keys configured — calls will simply error until the
+  // safe even without keys configured - calls will simply error until the
   // user wires up keys, and the engine will report the missing key clearly.
   createRoute({
-    alias: 'bigliner-smart',
-    name: 'Bigliner Smart',
-    description: ALIAS_DEFAULTS['bigliner-smart'].description,
+    alias: 'nyth-smart',
+    name: 'Nyth Router Smart',
+    description: ALIAS_DEFAULTS['nyth-smart'].description,
     strategy: 'priority',
     conditions: { requiresTools: true },
     isDefault: true,
@@ -227,9 +341,9 @@ export function ensureDefaultRoutes() {
     ],
   });
   createRoute({
-    alias: 'bigliner-fast',
-    name: 'Bigliner Fast',
-    description: ALIAS_DEFAULTS['bigliner-fast'].description,
+    alias: 'nyth-fast',
+    name: 'Nyth Router Fast',
+    description: ALIAS_DEFAULTS['nyth-fast'].description,
     strategy: 'fastest',
     steps: [
       { providerId: 'groq', modelId: 'llama-4-70b' },
@@ -238,9 +352,9 @@ export function ensureDefaultRoutes() {
     ],
   });
   createRoute({
-    alias: 'bigliner-cheap',
-    name: 'Bigliner Cheap',
-    description: ALIAS_DEFAULTS['bigliner-cheap'].description,
+    alias: 'nyth-cheap',
+    name: 'Nyth Router Cheap',
+    description: ALIAS_DEFAULTS['nyth-cheap'].description,
     strategy: 'cheapest',
     steps: [
       { providerId: 'deepseek', modelId: 'deepseek-v4' },
@@ -249,9 +363,9 @@ export function ensureDefaultRoutes() {
     ],
   });
   createRoute({
-    alias: 'bigliner-vision',
-    name: 'Bigliner Vision',
-    description: ALIAS_DEFAULTS['bigliner-vision'].description,
+    alias: 'nyth-vision',
+    name: 'Nyth Router Vision',
+    description: ALIAS_DEFAULTS['nyth-vision'].description,
     strategy: 'priority',
     conditions: { requiresVision: true },
     steps: [
@@ -261,8 +375,8 @@ export function ensureDefaultRoutes() {
     ],
   });
   createRoute({
-    alias: 'bigliner-local',
-    name: 'Bigliner Local',
+    alias: 'nyth-local',
+    name: 'Nyth Router Local',
     description: 'Prefer local runtimes when available.',
     strategy: 'priority',
     steps: [

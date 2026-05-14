@@ -13,7 +13,7 @@ export default function ApiKeysPage() {
   const [keys, setKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
-  const [draft, setDraft] = useState({ label: '', rateLimitPerMin: 0, allowedModels: '', allowedRoutes: '' });
+  const [draft, setDraft] = useState({ label: '', customKey: '', rateLimitPerMin: 0, allowedModels: '', allowedRoutes: '' });
   const [revealed, setRevealed] = useState<{ key: string; id: string } | null>(null);
   const toast = useToast();
 
@@ -31,7 +31,8 @@ export default function ApiKeysPage() {
     const created = await api<any>('/api/oauth/unified-keys', {
       method: 'POST',
       body: JSON.stringify({
-        label: draft.label || 'Unified key',
+        label: draft.label || draft.customKey || 'Unified key',
+        customKey: draft.customKey || undefined,
         rateLimitPerMin: Number(draft.rateLimitPerMin) || null,
         allowedRoutes: draft.allowedRoutes ? draft.allowedRoutes.split(',').map((s) => s.trim()).filter(Boolean) : [],
         allowedModels: draft.allowedModels ? draft.allowedModels.split(',').map((s) => s.trim()).filter(Boolean) : [],
@@ -39,8 +40,8 @@ export default function ApiKeysPage() {
     });
     setRevealed({ key: created.key.key, id: created.key.id });
     setShowNew(false);
-    setDraft({ label: '', rateLimitPerMin: 0, allowedModels: '', allowedRoutes: '' });
-    toast.push('Unified API key created. Copy it now — it will not be shown again.', 'success');
+    setDraft({ label: '', customKey: '', rateLimitPerMin: 0, allowedModels: '', allowedRoutes: '' });
+    toast.push('Unified API key created. Copy it now. It will not be shown again.', 'success');
     load();
   }
 
@@ -50,6 +51,12 @@ export default function ApiKeysPage() {
     setRevealed({ key: data.key.key, id: data.key.id });
     toast.push('Key rotated. Update your apps with the new value.', 'success');
     load();
+  }
+
+  async function copyExisting(id: string) {
+    const data = await api<any>(`/api/oauth/unified-keys/${id}/reveal`, { method: 'POST' });
+    await copyToClipboard(data.key.key);
+    toast.push('Key copied to clipboard.', 'success');
   }
 
   async function revoke(id: string) {
@@ -69,10 +76,10 @@ export default function ApiKeysPage() {
   return (
     <Page
       title="API keys"
-      description="Bigliner gives you one unified key per workspace. External apps use it on /v1/chat/completions and Bigliner routes to providers."
+      description="Nyth gives you one unified key per workspace. External apps use it on /v1/chat/completions and Nyth routes to providers."
       actions={
         <button onClick={() => setShowNew(true)} className="btn-primary">
-          <Icons.Plus className="h-4 w-4" /> New unified key
+          <Icons.Plus className="h-3.5 w-3.5" /> New key
         </button>
       }
     >
@@ -81,14 +88,14 @@ export default function ApiKeysPage() {
         <div className="relative">
           <h3 className="font-display text-lg font-semibold text-ink-50">How to use</h3>
           <p className="mt-1 text-sm text-ink-200">
-            Send any OpenAI-compatible request with a Bigliner unified key. Bigliner picks a provider based on your routes.
+            Use one Nyth key and let your saved paths do the rest.
           </p>
           <pre className="mt-3 overflow-x-auto pretty-scroll rounded-2xl border border-white/10 bg-ink-900/70 p-3 text-xs text-ink-100">
 {`curl http://localhost:9879/v1/chat/completions \\
   -H "Authorization: Bearer bl_..." \\
   -H "Content-Type: application/json" \\
   --data '{
-    "model": "bigliner-smart",
+    "model": "nyth-smart",
     "messages": [{ "role": "user", "content": "Hello!" }]
   }'`}
           </pre>
@@ -115,7 +122,7 @@ export default function ApiKeysPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-display text-lg font-semibold text-ink-50">{k.label}</div>
-                  <code className="text-xs text-ink-300">bl_{k.keyPrefix}…••••</code>
+                  <code className="text-xs text-ink-300">{k.maskedKey || `${k.keyPrefix}...••••`}</code>
                 </div>
                 <span className={`pill text-[10px] ${k.enabled ? 'border-aurora-mint/40 bg-aurora-mint/10 text-aurora-mint' : 'border-aurora-rose/40 bg-aurora-rose/10 text-aurora-rose'}`}>
                   {k.enabled ? 'enabled' : 'revoked'}
@@ -125,9 +132,12 @@ export default function ApiKeysPage() {
                 <li>Rate limit: {k.rateLimitPerMin ? `${k.rateLimitPerMin}/min` : 'unlimited'}</li>
                 <li>Allowed routes: {k.allowedRoutes?.length ? k.allowedRoutes.join(', ') : 'all'}</li>
                 <li>Allowed models: {k.allowedModels?.length ? k.allowedModels.join(', ') : 'all'}</li>
-                <li>Last used: {k.lastUsedAt ? relativeTime(k.lastUsedAt) : '—'}</li>
+                <li>Last used: {k.lastUsedAt ? relativeTime(k.lastUsedAt) : '-'}</li>
               </ul>
               <div className="mt-4 flex flex-wrap gap-2">
+                <button onClick={() => copyExisting(k.id)} className="btn-ghost text-xs">
+                  <Icons.Copy className="h-3 w-3" /> Copy
+                </button>
                 <button onClick={() => rotate(k.id)} className="btn-ghost text-xs">
                   <Icons.RefreshCcw className="h-3 w-3" /> Rotate
                 </button>
@@ -153,14 +163,18 @@ export default function ApiKeysPage() {
         footer={
           <>
             <button onClick={() => setShowNew(false)} className="btn-ghost">Cancel</button>
-            <button form="new-unified-key" type="submit" className="btn-primary"><Icons.KeyRound className="h-4 w-4" /> Create</button>
+            <button form="new-unified-key" type="submit" className="btn-primary"><Icons.KeyRound className="h-3.5 w-3.5" /> Create</button>
           </>
         }
       >
         <form id="new-unified-key" onSubmit={create} className="space-y-3 text-sm">
           <div>
             <label className="field-label">Label</label>
-            <input className="field-input mt-1" value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="e.g. CLI app" />
+            <input className="field-input mt-1" value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="Defaults to the API key value" />
+          </div>
+          <div>
+            <label className="field-label">API key value (optional)</label>
+            <input className="field-input mt-1 font-mono" value={draft.customKey} onChange={(e) => setDraft({ ...draft, customKey: e.target.value })} placeholder="Leave blank to auto-generate, or paste your own key" />
           </div>
           <div>
             <label className="field-label">Rate limit (req / min, 0 = unlimited)</label>
@@ -168,11 +182,11 @@ export default function ApiKeysPage() {
           </div>
           <div>
             <label className="field-label">Allowed routes (comma list, blank = all)</label>
-            <input className="field-input mt-1 font-mono" value={draft.allowedRoutes} onChange={(e) => setDraft({ ...draft, allowedRoutes: e.target.value })} placeholder="bigliner-smart, bigliner-cheap" />
+            <input className="field-input mt-1 font-mono" value={draft.allowedRoutes} onChange={(e) => setDraft({ ...draft, allowedRoutes: e.target.value })} placeholder="nyth-smart, nyth-cheap" />
           </div>
           <div>
             <label className="field-label">Allowed models (comma list, blank = all)</label>
-            <input className="field-input mt-1 font-mono" value={draft.allowedModels} onChange={(e) => setDraft({ ...draft, allowedModels: e.target.value })} placeholder="openai:gpt-5.5, anthropic:claude-opus-4.7" />
+            <input className="field-input mt-1 font-mono" value={draft.allowedModels} onChange={(e) => setDraft({ ...draft, allowedModels: e.target.value })} placeholder="openai/gpt-5.5, anthropic/claude-opus-4.7" />
           </div>
         </form>
       </Modal>
@@ -181,7 +195,7 @@ export default function ApiKeysPage() {
         open={!!revealed}
         onClose={() => setRevealed(null)}
         title="Copy your new key"
-        description="This is the only time Bigliner will show the full value."
+        description="This is the only time the full key is shown."
         footer={
           <button
             onClick={() => {
@@ -190,7 +204,7 @@ export default function ApiKeysPage() {
             }}
             className="btn-primary"
           >
-            <Icons.Copy className="h-4 w-4" /> Copy key
+            <Icons.Copy className="h-3.5 w-3.5" /> Copy key
           </button>
         }
       >

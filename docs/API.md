@@ -1,9 +1,9 @@
 # HTTP API reference
 
-Bigliner exposes two surfaces:
+Nyth Router exposes two surfaces:
 
-- **`/v1/*`** — OpenAI-compatible gateway that external apps call.
-- **`/api/*`** — control-plane endpoints that the dashboard (or your CLI) calls.
+- **`/v1/*`** - OpenAI-compatible gateway that external apps call.
+- **`/api/*`** - control-plane endpoints that the dashboard (or your CLI) calls.
 
 All endpoints return JSON unless noted.
 
@@ -11,8 +11,8 @@ All endpoints return JSON unless noted.
 
 | Surface  | Auth                                                  |
 |----------|-------------------------------------------------------|
-| `/v1/*`  | `Authorization: Bearer bl_…` (unified key) **or** `Authorization: Bearer at_…` (OAuth token). |
-| `/api/*` | Session cookie (`bigliner_sid`) issued by `/api/auth/login`. |
+| `/v1/*`  | `Authorization: Bearer bl_...` (unified key) **or** `Authorization: Bearer at_...` (OAuth token). |
+| `/api/*` | Session cookie (`nyth_sid`) issued by `/api/auth/login`. |
 
 ## Gateway endpoints (`/v1`)
 
@@ -22,7 +22,7 @@ Same shape as OpenAI's Chat Completions API.
 
 ```bash
 curl http://localhost:9879/v1/chat/completions \
-  -H 'authorization: Bearer bl_…' \
+  -H 'authorization: Bearer bl_...' \
   -H 'content-type: application/json' \
   --data '{
     "model": "openai:gpt-5.5-mini",
@@ -35,12 +35,12 @@ Response (truncated):
 
 ```json
 {
-  "id": "chatcmpl-…",
+  "id": "chatcmpl-...",
   "object": "chat.completion",
   "model": "openai:gpt-5.5-mini",
-  "choices": [{ "index": 0, "message": { "role":"assistant", "content":"…" }, "finish_reason":"stop" }],
+  "choices": [{ "index": 0, "message": { "role":"assistant", "content":"..." }, "finish_reason":"stop" }],
   "usage": { "prompt_tokens": 7, "completion_tokens": 12, "total_tokens": 19 },
-  "bigliner": {
+  "nyth": {
     "route": "openai:gpt-5.5-mini",
     "provider": "openai",
     "model": "gpt-5.5-mini",
@@ -65,7 +65,7 @@ OpenAI-compatible embeddings, routed identically to `/v1/chat/completions`. (Ada
 
 | Method | Path                  | Body / notes |
 |--------|-----------------------|--------------|
-| POST   | `/api/auth/login`     | `{ password }` — returns `Set-Cookie: bigliner_sid=…`. |
+| POST   | `/api/auth/login`     | `{ password }` - returns `Set-Cookie: nyth_sid=...`. |
 | POST   | `/api/auth/logout`    | invalidates the current session. |
 | GET    | `/api/auth/me`        | session info. |
 
@@ -91,14 +91,14 @@ OpenAI-compatible embeddings, routed identically to `/v1/chat/completions`. (Ada
 | POST   | `/api/routes`              | create alias. |
 | PATCH  | `/api/routes/:id`          | edit name / steps / conditions. |
 | DELETE | `/api/routes/:id`          | delete. |
-| POST   | `/api/routes/simulate`     | `{ model }` — returns the route the engine would pick. |
+| POST   | `/api/routes/simulate`     | `{ model }` - returns the route the engine would pick. |
 
-### API keys (unified `bl_…`)
+### API keys (unified `bl_...`)
 
 | Method | Path                       | Notes |
 |--------|----------------------------|-------|
 | GET    | `/api/api-keys`            | list, masked. |
-| POST   | `/api/api-keys`            | `{ name, scopes?, rate_limit? }` — returns plaintext **once**. |
+| POST   | `/api/api-keys`            | `{ name, scopes?, rate_limit? }` - returns plaintext **once**. |
 | POST   | `/api/api-keys/:id/rotate` | returns new plaintext **once**. |
 | DELETE | `/api/api-keys/:id`        | revoke. |
 

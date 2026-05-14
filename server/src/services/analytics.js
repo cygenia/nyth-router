@@ -1,4 +1,5 @@
 import db from '../db/connection.js';
+import { hasAnyUnknownPricing, hasUnknownPricingSince } from './costCalculator.js';
 
 const DAY = 86400000;
 
@@ -38,6 +39,7 @@ export function getOverview() {
       outputTokens: totalRow.outputTokens,
       totalTokens: totalRow.totalTokens,
       estimatedCost: round(totalRow.estimatedCost),
+      costIncomplete: hasAnyUnknownPricing(),
       errors: totalRow.errors,
     },
     last24h: {
@@ -45,6 +47,7 @@ export function getOverview() {
       inputTokens: recentRow.inputTokens,
       outputTokens: recentRow.outputTokens,
       estimatedCost: round(recentRow.estimatedCost),
+      costIncomplete: hasUnknownPricingSince(since24h),
       errors: recentRow.errors,
       avgLatencyMs: Math.round(recentRow.avgLatency || 0),
       p50LatencyMs: percentile(latencyRow, 50),
@@ -76,50 +79,56 @@ export function getDailyUsage(days = 14) {
 export function getUsageByProvider(days = 14) {
   const since = new Date(Date.now() - days * DAY).toISOString().slice(0, 10);
   return db.prepare(`
-    SELECT provider_id AS providerId,
-           SUM(request_count) AS requests,
-           SUM(input_tokens) AS inputTokens,
-           SUM(output_tokens) AS outputTokens,
-           SUM(estimated_cost) AS estimatedCost,
-           SUM(error_count) AS errors
-    FROM usage_daily
-    WHERE day >= ?
-    GROUP BY provider_id
-    ORDER BY estimatedCost DESC
-  `).all(since);
+    SELECT u.provider_id AS providerId,
+           SUM(u.request_count) AS requests,
+           SUM(u.input_tokens) AS inputTokens,
+           SUM(u.output_tokens) AS outputTokens,
+           SUM(u.estimated_cost) AS estimatedCost,
+           SUM(u.error_count) AS errors,
+           SUM(CASE WHEN m.provider_id IS NULL OR (m.input_price IS NULL AND m.output_price IS NULL) THEN u.request_count ELSE 0 END) AS unpricedRequests
+    FROM usage_daily u
+    LEFT JOIN models m ON m.provider_id = u.provider_id AND m.id = u.model
+    WHERE u.day >= ?
+    GROUP BY u.provider_id
+    ORDER BY estimatedCost DESC, requests DESC
+  `).all(since).map((row) => ({ ...row, costIncomplete: (row.unpricedRequests || 0) > 0 }));
 }
 
 export function getUsageByModel(days = 14) {
   const since = new Date(Date.now() - days * DAY).toISOString().slice(0, 10);
   return db.prepare(`
-    SELECT provider_id AS providerId, model,
-           SUM(request_count) AS requests,
-           SUM(input_tokens) AS inputTokens,
-           SUM(output_tokens) AS outputTokens,
-           SUM(estimated_cost) AS estimatedCost,
-           SUM(error_count) AS errors
-    FROM usage_daily
-    WHERE day >= ?
-    GROUP BY provider_id, model
-    ORDER BY estimatedCost DESC
+    SELECT u.provider_id AS providerId, u.model,
+           SUM(u.request_count) AS requests,
+           SUM(u.input_tokens) AS inputTokens,
+           SUM(u.output_tokens) AS outputTokens,
+           SUM(u.estimated_cost) AS estimatedCost,
+           SUM(u.error_count) AS errors,
+           CASE WHEN m.provider_id IS NULL OR (m.input_price IS NULL AND m.output_price IS NULL) THEN 1 ELSE 0 END AS costIncomplete
+    FROM usage_daily u
+    LEFT JOIN models m ON m.provider_id = u.provider_id AND m.id = u.model
+    WHERE u.day >= ?
+    GROUP BY u.provider_id, u.model
+    ORDER BY estimatedCost DESC, requests DESC
     LIMIT 50
-  `).all(since);
+  `).all(since).map((row) => ({ ...row, costIncomplete: !!row.costIncomplete }));
 }
 
 export function getUsageByApp(days = 14) {
   const since = new Date(Date.now() - days * DAY).toISOString().slice(0, 10);
   return db.prepare(`
-    SELECT app_id AS appId,
-           SUM(request_count) AS requests,
-           SUM(input_tokens) AS inputTokens,
-           SUM(output_tokens) AS outputTokens,
-           SUM(estimated_cost) AS estimatedCost,
-           SUM(error_count) AS errors
-    FROM usage_daily
-    WHERE day >= ?
-    GROUP BY app_id
-    ORDER BY estimatedCost DESC
-  `).all(since);
+    SELECT u.app_id AS appId,
+           SUM(u.request_count) AS requests,
+           SUM(u.input_tokens) AS inputTokens,
+           SUM(u.output_tokens) AS outputTokens,
+           SUM(u.estimated_cost) AS estimatedCost,
+           SUM(u.error_count) AS errors,
+           SUM(CASE WHEN m.provider_id IS NULL OR (m.input_price IS NULL AND m.output_price IS NULL) THEN u.request_count ELSE 0 END) AS unpricedRequests
+    FROM usage_daily u
+    LEFT JOIN models m ON m.provider_id = u.provider_id AND m.id = u.model
+    WHERE u.day >= ?
+    GROUP BY u.app_id
+    ORDER BY estimatedCost DESC, requests DESC
+  `).all(since).map((row) => ({ ...row, costIncomplete: (row.unpricedRequests || 0) > 0 }));
 }
 
 export function getRecentFallbacks(limit = 20) {

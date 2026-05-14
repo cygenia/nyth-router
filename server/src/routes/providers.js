@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db/connection.js';
 import { requireDashboard } from '../middleware/auth.js';
 import { pingProvider } from '../services/healthChecker.js';
+import { listAvailableModels, refreshProviderModels } from '../services/modelAvailability.js';
 
 const router = Router();
 
@@ -36,6 +37,58 @@ router.get('/', (req, res) => {
       modelCount: modelMap.get(p.id) || 0,
     })),
   });
+});
+
+router.get('/available-models', (req, res) => {
+  res.json({ ok: true, ...listAvailableModels() });
+});
+
+router.post('/:id/refresh-models', async (req, res) => {
+  const result = await refreshProviderModels(req.params.id, req.body?.accountId || null);
+  res.status(result.ok ? 200 : 400).json(result);
+});
+
+router.post('/:id/models', (req, res) => {
+  const provider = db.prepare('SELECT id FROM providers WHERE id = ?').get(req.params.id);
+  if (!provider) return res.status(404).json({ ok: false, error: 'provider_not_found' });
+  const modelId = String(req.body?.id || req.body?.model || '').trim();
+  if (!modelId) return res.status(400).json({ ok: false, error: 'model_required' });
+  const displayName = String(req.body?.displayName || modelId).trim();
+  const now = Date.now();
+  db.prepare(`
+    INSERT INTO models (provider_id, id, display_name, context_length, input_price, output_price, capabilities, release_status, tags, metadata_only, created_at, updated_at)
+    VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, 0, ?, ?)
+    ON CONFLICT(provider_id, id) DO UPDATE SET
+      display_name = excluded.display_name,
+      context_length = COALESCE(excluded.context_length, models.context_length),
+      capabilities = excluded.capabilities,
+      release_status = excluded.release_status,
+      tags = excluded.tags,
+      metadata_only = 0,
+      updated_at = excluded.updated_at
+  `).run(
+    req.params.id,
+    modelId,
+    displayName,
+    Number(req.body?.contextLength || 128000),
+    JSON.stringify(req.body?.capabilities || ['chat', 'tools', 'streaming']),
+    String(req.body?.releaseStatus || 'manual'),
+    JSON.stringify(req.body?.tags || ['manual']),
+    now,
+    now,
+  );
+  res.json({ ok: true, model: { providerId: req.params.id, id: modelId, displayName } });
+});
+
+router.delete('/:id/models/:modelId', (req, res) => {
+  const provider = db.prepare('SELECT id FROM providers WHERE id = ?').get(req.params.id);
+  if (!provider) return res.status(404).json({ ok: false, error: 'provider_not_found' });
+  const modelId = String(req.params.modelId || '').trim();
+  if (!modelId) return res.status(400).json({ ok: false, error: 'model_required' });
+  const existing = db.prepare('SELECT id FROM models WHERE provider_id = ? AND id = ?').get(req.params.id, modelId);
+  if (!existing) return res.status(404).json({ ok: false, error: 'model_not_found' });
+  db.prepare('DELETE FROM models WHERE provider_id = ? AND id = ?').run(req.params.id, modelId);
+  res.json({ ok: true, removed: { providerId: req.params.id, id: modelId } });
 });
 
 router.get('/:id', (req, res) => {

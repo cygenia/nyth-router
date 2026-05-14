@@ -8,11 +8,11 @@ const router = Router();
 router.use(requireDashboard);
 
 const SAMPLE = {
-  $schema: 'https://bigliner.local/auth-config.schema.json',
+  $schema: 'https://nyth.local/auth-config.schema.json',
   apps: [
     {
       name: 'My CLI app',
-      description: 'Local CLI that uses Bigliner.',
+      description: 'Local CLI that uses Nyth Router.',
       redirectUris: ['http://localhost:5173/callback'],
       scopes: ['chat:read', 'chat:write', 'usage:read'],
     },
@@ -50,7 +50,7 @@ router.get('/export', (req, res) => {
     redacted: true,
     note: includeSecrets
       ? 'Local-only export requested, but raw secret values are intentionally never included.'
-      : 'Redacted export — never includes secrets.',
+      : 'Redacted export - never includes secrets.',
   });
 });
 

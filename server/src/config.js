@@ -31,8 +31,9 @@ const dataDir = path.join(__dirname, '..', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 
 function ensureMasterKey() {
-  if (env.BIGLINER_MASTER_KEY && env.BIGLINER_MASTER_KEY.length >= 16) {
-    return env.BIGLINER_MASTER_KEY;
+  const configuredMasterKey = env.NYTH_MASTER_KEY;
+  if (configuredMasterKey && configuredMasterKey.length >= 16) {
+    return configuredMasterKey;
   }
   const keyPath = path.join(dataDir, 'master.key');
   if (fs.existsSync(keyPath)) {
@@ -48,12 +49,12 @@ export const config = {
   dataDir,
   port: Number(env.PORT || 9879),
   host: env.HOST || 'localhost',
-  password: env.BIGLINER_PASSWORD || '',
+  password: env.NYTH_PASSWORD || '',
   masterKey: ensureMasterKey(),
-  dbPath: env.BIGLINER_DB_PATH || path.join(dataDir, 'bigliner.db'),
-  logRetentionDays: Number(env.BIGLINER_LOG_RETENTION_DAYS || 30),
-  promptLogMode: ['off', 'metadata', 'preview', 'full'].includes(env.BIGLINER_PROMPT_LOG_MODE)
-    ? env.BIGLINER_PROMPT_LOG_MODE
+  dbPath: env.NYTH_DB_PATH || path.join(dataDir, 'nyth.db'),
+  logRetentionDays: Number(env.NYTH_LOG_RETENTION_DAYS || 30),
+  promptLogMode: ['off', 'metadata', 'preview', 'full'].includes(env.NYTH_PROMPT_LOG_MODE)
+    ? env.NYTH_PROMPT_LOG_MODE
     : 'preview',
   sessionTtlMs: 1000 * 60 * 60 * 12,
   webDistPath: path.join(ROOT, 'web', 'dist'),

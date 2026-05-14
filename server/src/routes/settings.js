@@ -13,8 +13,8 @@ const upsertSetting = db.prepare(`
 `);
 
 export const DEFAULTS = {
-  defaultRoute: 'bigliner-smart',
-  defaultModelAlias: 'bigliner-smart',
+  defaultRoute: 'nyth-smart',
+  defaultModelAlias: 'nyth-smart',
   timeoutMs: '120000',
   retryCount: '1',
   maxFallbackDepth: '4',
@@ -26,6 +26,9 @@ export const DEFAULTS = {
   compressToolOutput: 'true',
   compressAssistantOutput: 'false',
   maxToolOutputChars: '12000',
+  streamKeepaliveSeconds: '15',
+  streamBootstrapRetries: '2',
+  nonStreamKeepaliveSeconds: '15',
 };
 
 export function getSettings() {

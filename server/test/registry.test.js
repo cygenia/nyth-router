@@ -22,6 +22,22 @@ test('registry contains the canonical implemented providers', () => {
   }
 });
 
+test('OpenAI registry includes Codex coding models', () => {
+  const openai = getProviderById('openai');
+  const ids = new Set(openai.models.map((m) => m.id));
+  assert.ok(ids.has('gpt-5-codex'));
+  assert.ok(ids.has('codex-1'));
+});
+
+test('OAuth providers mirror normal provider model menus', () => {
+  const codex = getProviderById('codex');
+  const claude = getProviderById('claude-oauth');
+  const gemini = getProviderById('gemini-oauth');
+  assert.ok(codex.models.some((m) => m.id === 'gpt-5.5'));
+  assert.ok(claude.models.some((m) => m.id === 'claude-opus-4.7'));
+  assert.ok(gemini.models.some((m) => m.id === 'gemini-3.0-pro'));
+});
+
 test('every provider has well-formed metadata', () => {
   const reg = getRegistry();
   const ids = new Set();
@@ -31,5 +47,6 @@ test('every provider has well-formed metadata', () => {
     ids.add(p.id);
     assert.ok(p.baseUrl, `missing baseUrl for ${p.id}`);
     assert.ok(['implemented', 'metadata-only', 'planned'].includes(p.status));
+    assert.ok(['openai-compatible', 'anthropic-compatible', 'codex-account', 'gemini-oauth-account', 'kiro-account', 'native', 'local'].includes(p.format), `bad format for ${p.id}`);
   }
 });

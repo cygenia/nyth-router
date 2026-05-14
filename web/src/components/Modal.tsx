@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReactNode, useEffect } from 'react';
 import { Icons } from '../lib/icons';
+import { usePreferences } from '../lib/preferences';
 
 interface Props {
   open: boolean;
@@ -15,6 +16,10 @@ interface Props {
 const sizeMap = { md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-4xl' };
 
 export function Modal({ open, title, description, onClose, children, footer, size = 'md' }: Props) {
+  const { t } = usePreferences();
+  const renderedTitle = typeof title === 'string' ? t(title) : title;
+  const renderedDescription = typeof description === 'string' ? t(description) : description;
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -31,7 +36,7 @@ export function Modal({ open, title, description, onClose, children, footer, siz
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          className="fixed inset-y-0 left-0 right-0 z-50 flex items-center justify-center px-4 py-6 md:left-72 md:px-6"
         >
           <button onClick={onClose} aria-label="Close" className="absolute inset-0 bg-black/60 backdrop-blur-md" />
           <motion.div
@@ -43,8 +48,8 @@ export function Modal({ open, title, description, onClose, children, footer, siz
           >
             <div className="flex items-start gap-3 border-b border-white/10 px-6 py-4">
               <div className="flex-1">
-                {title && <h3 className="font-display text-lg font-semibold tracking-tight text-ink-50">{title}</h3>}
-                {description && <p className="mt-0.5 text-sm text-ink-300">{description}</p>}
+                {renderedTitle && <h3 className="font-display text-lg font-semibold tracking-tight text-ink-50">{renderedTitle}</h3>}
+                {renderedDescription && <p className="mt-0.5 text-sm text-ink-300">{renderedDescription}</p>}
               </div>
               <button onClick={onClose} className="rounded-full border border-white/10 bg-white/5 p-1.5 text-ink-100 hover:bg-white/10" aria-label="Close">
                 <Icons.X className="h-4 w-4" />

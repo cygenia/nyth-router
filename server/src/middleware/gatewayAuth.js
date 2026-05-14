@@ -8,15 +8,12 @@ export function authenticateGatewayRequest(req) {
     if (match) token = match[1].trim();
   }
   if (!token) return { ok: false, error: 'missing_authorization' };
-  if (token.startsWith('bl_')) {
-    const unified = findUnifiedKey(token);
-    if (!unified) return { ok: false, error: 'invalid_unified_key' };
-    return { ok: true, kind: 'unified', unifiedKey: unified };
-  }
   if (token.startsWith('blat_')) {
     const app = findAppByToken(token);
     if (!app) return { ok: false, error: 'invalid_app_token' };
     return { ok: true, kind: 'app', app };
   }
-  return { ok: false, error: 'unrecognised_token' };
+  const unified = findUnifiedKey(token);
+  if (!unified) return { ok: false, error: 'invalid_unified_key' };
+  return { ok: true, kind: 'unified', unifiedKey: unified };
 }

@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Page } from '../components/Page';
 import { Skeleton } from '../components/Skeleton';
 import { Icons } from '../lib/icons';
 import { api } from '../lib/api';
+import { useToast } from '../components/Toast';
+import { ProviderLogo } from '../lib/providerBranding';
+import { Dropdown } from '../components/Dropdown';
 
 const CATEGORY_LABELS: Record<string, string> = {
   cloud: 'Cloud',
-  aggregator: 'Aggregator',
+  aggregator: 'Agregator',
   serverless: 'Serverless',
-  local: 'Local',
-  image: 'Image',
-  embeddings: 'Embeddings',
+  local: 'Lokal',
+  image: 'Gambar',
+  embeddings: 'Embedding',
   audio: 'Audio',
   custom: 'Custom',
 };
@@ -36,6 +38,9 @@ export default function ProvidersPage() {
   const [category, setCategory] = useState('all');
   const [capability, setCapability] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; status?: number; error?: string; checkedAt: number }>>({});
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +64,8 @@ export default function ProvidersPage() {
       return (
         p.name.toLowerCase().includes(s) ||
         p.id.toLowerCase().includes(s) ||
-        p.format.toLowerCase().includes(s)
+        p.format.toLowerCase().includes(s) ||
+        (p.models || []).some((m: any) => `${m.displayName || m.display || ''} ${m.id || ''}`.toLowerCase().includes(s))
       );
     });
   }, [providers, search, category, capability, statusFilter]);
@@ -74,10 +80,24 @@ export default function ProvidersPage() {
   const categories = ['all', ...new Set(providers.map((p) => p.category))];
   const capabilities = ['all', ...new Set(providers.flatMap((p) => p.capabilities || []))];
 
+  async function testProvider(providerId: string) {
+    setTestingProvider(providerId);
+    try {
+      const res = await api<any>(`/api/providers/${providerId}/test`, { method: 'POST' });
+      setTestResults((prev) => ({ ...prev, [providerId]: { ok: res.ok, status: res.status, error: res.error, checkedAt: Date.now() } }));
+      toast.push(res.ok ? 'Provider API reachable' : `Provider API failed${res.status ? `, ${res.status}` : ''}`, res.ok ? 'success' : 'error');
+    } catch (err: any) {
+      setTestResults((prev) => ({ ...prev, [providerId]: { ok: false, error: err?.message || 'Request failed', checkedAt: Date.now() } }));
+      toast.push(err?.message || 'Provider API test failed', 'error');
+    } finally {
+      setTestingProvider(null);
+    }
+  }
+
   return (
     <Page
-      title="Providers"
-      description="Browse the registry of 100+ providers and models. Add your API keys to start routing real traffic."
+      title="API Providers"
+      description="Browse provider APIs and model catalogs. Add API keys or connect OAuth accounts to start routing real traffic."
       actions={
         <div className="flex items-center gap-2">
           <span className="pill"><Icons.Plug className="h-3 w-3" /> {counts.total} total</span>
@@ -92,27 +112,19 @@ export default function ProvidersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search providers, formats, models…"
+            placeholder="Search providers, formats, models..."
             className="flex-1 bg-transparent text-ink-50 placeholder:text-ink-300/70 outline-none"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-white/10 bg-ink-900/60 px-3 py-2 text-xs text-ink-100">
-            {categories.map((c) => (
-              <option key={c} value={c} className="bg-ink-950">{c === 'all' ? 'All categories' : CATEGORY_LABELS[c] || c}</option>
-            ))}
-          </select>
-          <select value={capability} onChange={(e) => setCapability(e.target.value)} className="rounded-xl border border-white/10 bg-ink-900/60 px-3 py-2 text-xs text-ink-100">
-            {capabilities.map((c) => (
-              <option key={c} value={c} className="bg-ink-950">{c === 'all' ? 'All capabilities' : c}</option>
-            ))}
-          </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-white/10 bg-ink-900/60 px-3 py-2 text-xs text-ink-100">
-            <option value="all" className="bg-ink-950">All status</option>
-            <option value="implemented" className="bg-ink-950">Live adapter</option>
-            <option value="metadata-only" className="bg-ink-950">Metadata only</option>
-            <option value="planned" className="bg-ink-950">Planned</option>
-          </select>
+        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 md:w-auto">
+          <Dropdown value={category} onChange={setCategory} options={categories.map((c) => ({ value: c, label: c === 'all' ? 'All categories' : CATEGORY_LABELS[c] || c }))} />
+          <Dropdown value={capability} onChange={setCapability} options={capabilities.map((c) => ({ value: c, label: c === 'all' ? 'All capabilities' : c }))} />
+          <Dropdown value={statusFilter} onChange={setStatusFilter} options={[
+            { value: 'all', label: 'All status' },
+            { value: 'implemented', label: 'Live adapter' },
+            { value: 'metadata-only', label: 'Metadata only' },
+            { value: 'planned', label: 'Planned' },
+          ]} />
         </div>
       </div>
 
@@ -120,18 +132,17 @@ export default function ProvidersPage() {
         <Skeleton rows={4} height={120} />
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((p) => (
-            <motion.div
+          {filtered.map((p) => {
+            const result = testResults[p.id];
+            const isTesting = testingProvider === p.id;
+            return (
+            <div
               key={p.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.18 }}
-              whileHover={{ y: -3 }}
-              className="panel relative flex flex-col gap-3 p-4"
+              className="panel relative flex flex-col gap-3 p-4 transition-transform duration-150 hover:-translate-y-0.5"
             >
               <div className="flex items-start gap-3">
-                <ProviderAvatar id={p.id} />
-                <div className="flex-1">
+                <ProviderLogo id={p.id} name={p.name} />
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <Link to={`/providers/${p.id}`} className="font-display text-base font-semibold text-ink-50 hover:text-aurora-mint">
                       {p.name}
@@ -142,11 +153,11 @@ export default function ProvidersPage() {
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-300">
                     <span>{CATEGORY_LABELS[p.category] || p.category}</span>
-                    <span>·</span>
+                    <span>,</span>
                     <span className="font-mono">{p.format}</span>
                     {p.docsUrl && (
                       <>
-                        <span>·</span>
+                        <span>,</span>
                         <a href={p.docsUrl} target="_blank" rel="noreferrer" className="hover:text-aurora-mint">docs</a>
                       </>
                     )}
@@ -163,32 +174,35 @@ export default function ProvidersPage() {
                   <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-ink-300">+{(p.capabilities || []).length - 5}</span>
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs text-ink-300">
-                <span>{p.modelCount} models · {p.keyCount} key{p.keyCount === 1 ? '' : 's'}</span>
-                <Link to={`/providers/${p.id}`} className="text-aurora-mint hover:text-aurora-pink">manage →</Link>
+              {result && (
+                <div className={`rounded-2xl border px-3 py-2 text-xs ${result.ok ? 'border-aurora-mint/30 bg-aurora-mint/10 text-aurora-mint' : 'border-aurora-rose/30 bg-aurora-rose/10 text-aurora-rose'}`}>
+                  {result.ok ? `API OK, status ${result.status || 200}` : `API failed, ${result.error || `status ${result.status || 0}`}`}
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-2 text-xs text-ink-300">
+                <span>{p.modelCount} models, {p.keyCount} key{p.keyCount === 1 ? '' : 's'}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => testProvider(p.id)}
+                    disabled={isTesting || p.status !== 'implemented'}
+                    className="inline-flex items-center gap-1 text-aurora-sky hover:text-aurora-mint disabled:cursor-not-allowed disabled:text-ink-500"
+                    title={p.status === 'implemented' ? 'Test API provider dengan key tersimpan' : 'Test API memerlukan adapter live'}
+                  >
+                    {isTesting ? <Icons.Loader2 className="h-3 w-3 animate-spin" /> : <Icons.Activity className="h-3 w-3" />}
+                    Test API
+                  </button>
+                  <Link to={`/providers/${p.id}`} className="text-aurora-mint hover:text-aurora-pink">manage to</Link>
+                </div>
               </div>
-            </motion.div>
-          ))}
+            </div>
+          );
+          })}
         </div>
       )}
       {!loading && filtered.length === 0 && (
-        <div className="panel p-8 text-center text-ink-300">No providers match your filters.</div>
+        <div className="panel p-8 text-center text-ink-300">Tidak ada provider yang cocok dengan filter Anda.</div>
       )}
     </Page>
-  );
-}
-
-function ProviderAvatar({ id }: { id: string }) {
-  const seed = id.charCodeAt(0) + (id.charCodeAt(1) || 0);
-  const hue = seed * 47 % 360;
-  return (
-    <div
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-white/10 text-sm font-display font-semibold text-ink-950"
-      style={{
-        background: `linear-gradient(135deg, hsl(${hue}, 80%, 78%), hsl(${(hue + 80) % 360}, 75%, 70%))`,
-      }}
-    >
-      {id.slice(0, 2).toUpperCase()}
-    </div>
   );
 }

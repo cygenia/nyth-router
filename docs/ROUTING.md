@@ -1,6 +1,6 @@
 # Routing
 
-Bigliner's route engine decides which provider/model serves each `/v1/chat/completions` request. The engine takes the `model` field from the incoming request and resolves it through three matching strategies, in order.
+Nyth Router's route engine decides which provider/model serves each `/v1/chat/completions` request. The engine takes the `model` field from the incoming request and resolves it through three matching strategies, in order.
 
 ## 1. Provider prefix
 
@@ -21,18 +21,18 @@ If the model string is not a prefix, the engine checks for a route with `name ==
 
 - `provider` (id)
 - `model`
-- optional `condition` (max cost, requires tools / vision / streaming, region, …)
+- optional `condition` (max cost, requires tools / vision / streaming, region, ...)
 - `on_failure` (`retry`, `fallback`, `error`)
 
 Default aliases seeded on first boot:
 
 | Alias              | Description |
 |--------------------|-------------|
-| `bigliner-smart`   | High-quality default (Claude Opus → GPT-5.5 → Gemini 3 Pro). |
-| `bigliner-fast`    | Latency-optimised lane (Groq Llama 4 70B → Cerebras → DeepSeek V3). |
-| `bigliner-cheap`   | Cost-optimised lane (DeepSeek V3 → Mistral small → Gemini Flash). |
-| `bigliner-vision`  | Vision-capable lane (GPT-5.5 vision → Claude Sonnet vision → Gemini 3 Pro vision). |
-| `bigliner-local`   | Local runtimes only (Ollama → LM Studio → vLLM). |
+| `nyth-smart`   | High-quality default (Claude Opus → GPT-5.5 → Gemini 3 Pro). |
+| `nyth-fast`    | Latency-optimised lane (Groq Llama 4 70B → Cerebras → DeepSeek V3). |
+| `nyth-cheap`   | Cost-optimised lane (DeepSeek V3 → Mistral small → Gemini Flash). |
+| `nyth-vision`  | Vision-capable lane (GPT-5.5 vision → Claude Sonnet vision → Gemini 3 Pro vision). |
+| `nyth-local`   | Local runtimes only (Ollama → LM Studio → vLLM). |
 
 You can edit / disable / delete the defaults; the engine never recreates them after boot.
 
@@ -42,15 +42,15 @@ If the model is neither a prefix nor an alias, the engine searches the model reg
 
 ## Default route
 
-If none of the strategies above match, the request runs through the configured default route (`Settings → Default route`, default `bigliner-smart`).
+If none of the strategies above match, the request runs through the configured default route (`Settings → Default route`, default `nyth-smart`).
 
 ## Fallback chain
 
 Each route step has an `on_failure` action:
 
-- `error` — surface the provider error verbatim.
-- `retry` — retry the same step (with bounded backoff, default 2 retries).
-- `fallback` — move on to the next step in the route.
+- `error` - surface the provider error verbatim.
+- `retry` - retry the same step (with bounded backoff, default 2 retries).
+- `fallback` - move on to the next step in the route.
 
 Errors that trigger `fallback`/`retry`:
 
@@ -75,24 +75,24 @@ Each step can attach optional conditions; if a condition fails, the engine skips
 
 ## Route simulator
 
-The **Routes** page includes a simulator: type a model string and see exactly which route, step, and provider/model the engine would pick — useful when tuning aliases or fallback chains before committing.
+The **Routes** page includes a simulator: type a model string and see exactly which route, step, and provider/model the engine would pick - useful when tuning aliases or fallback chains before committing.
 
 ## API examples
 
 Direct prefix:
 
 ```bash
-curl … --data '{"model":"openai:gpt-5.5","messages":[…]}'
+curl ... --data '{"model":"openai:gpt-5.5","messages":[...]}'
 ```
 
 Alias:
 
 ```bash
-curl … --data '{"model":"bigliner-cheap","messages":[…]}'
+curl ... --data '{"model":"nyth-cheap","messages":[...]}'
 ```
 
 Default route:
 
 ```bash
-curl … --data '{"messages":[…]}'   # no model field at all
+curl ... --data '{"messages":[...]}'   # no model field at all
 ```

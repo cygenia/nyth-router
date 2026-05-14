@@ -7,6 +7,7 @@ import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
 import { copyToClipboard, formatCurrency, relativeTime } from '../lib/format';
+import { ProviderLogo } from '../lib/providerBranding';
 
 export default function ProviderDetailPage() {
   const { id } = useParams();
@@ -89,8 +90,13 @@ export default function ProviderDetailPage() {
 
   return (
     <Page
-      title={provider.name}
-      description={`Format: ${provider.format} · Category: ${provider.category} · Status: ${provider.status}`}
+      title={
+        <span className="inline-flex items-center gap-3">
+          <ProviderLogo id={provider.id} name={provider.name} size="lg" />
+          <span>{provider.name}</span>
+        </span>
+      }
+      description={`Format: ${provider.format}, Category: ${provider.category}, Status: ${provider.status}`}
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Link to="/providers" className="btn-ghost">
@@ -112,15 +118,15 @@ export default function ProviderDetailPage() {
             <Row label="Base URL" value={<code className="break-all text-ink-100">{provider.baseUrl}</code>} />
             <Row label="Auth type" value={provider.authType} />
             <Row label="Format" value={<span className="font-mono">{provider.format}</span>} />
-            <Row label="Capabilities" value={(provider.capabilities || []).join(', ') || '—'} />
-            <Row label="Docs" value={provider.docsUrl ? <a href={provider.docsUrl} target="_blank" rel="noreferrer" className="text-aurora-mint">{provider.docsUrl}</a> : '—'} />
-            <Row label="Notes" value={provider.notes || '—'} />
+            <Row label="Capabilities" value={(provider.capabilities || []).join(', ') || '-'} />
+            <Row label="Docs" value={provider.docsUrl ? <a href={provider.docsUrl} target="_blank" rel="noreferrer" className="text-aurora-mint">{provider.docsUrl}</a> : '-'} />
+            <Row label="Notes" value={provider.notes || '-'} />
           </dl>
           {pingState && (
             <div className={`mt-4 rounded-2xl border px-3 py-3 text-sm ${
               pingState.ok ? 'border-aurora-mint/30 bg-aurora-mint/10 text-aurora-mint' : 'border-aurora-rose/30 bg-aurora-rose/10 text-aurora-rose'
             }`}>
-              {pingState.ok ? `OK · status ${pingState.status}` : `Error · ${pingState.error || `status ${pingState.status}`}`}
+              {pingState.ok ? `OK, status ${pingState.status}` : `Error, ${pingState.error || `status ${pingState.status}`}`}
             </div>
           )}
         </section>
@@ -180,22 +186,23 @@ export default function ProviderDetailPage() {
                   <td className="px-3 py-2">
                     <div className="font-medium text-ink-50">{m.displayName}</div>
                     <div className="font-mono text-xs text-ink-300">{m.id}</div>
+                    <div className="mt-1 font-mono text-[10px] text-aurora-mint">canonical: {provider.id}/{m.id}</div>
                   </td>
-                  <td className="px-3 py-2 text-ink-200">{m.contextLength?.toLocaleString() || '—'}</td>
+                  <td className="px-3 py-2 text-ink-200">{m.contextLength?.toLocaleString() || '-'}</td>
                   <td className="px-3 py-2 text-ink-200">
-                    {m.inputPrice == null ? '—' : `${formatCurrency(m.inputPrice)} / ${formatCurrency(m.outputPrice)}`}
+                    {m.inputPrice == null ? '-' : `${formatCurrency(m.inputPrice)} / ${formatCurrency(m.outputPrice)}`}
                   </td>
-                  <td className="px-3 py-2 text-ink-200">{(m.capabilities || []).join(', ') || '—'}</td>
-                  <td className="px-3 py-2 text-ink-200 text-xs">{(m.tags || []).join(' · ')}</td>
+                  <td className="px-3 py-2 text-ink-200">{(m.capabilities || []).join(', ') || '-'}</td>
+                  <td className="px-3 py-2 text-ink-200 text-xs">{(m.tags || []).join(', ')}</td>
                   <td className="px-3 py-2 text-right">
                     <button
                       className="text-xs text-aurora-mint hover:text-aurora-pink"
                       onClick={() => {
-                        copyToClipboard(`${provider.id}:${m.id}`);
-                        toast.push(`Copied ${provider.id}:${m.id}`, 'success');
+                        copyToClipboard(`${provider.id}/${m.id}`);
+                        toast.push(`Copied ${provider.id}/${m.id}`, 'success');
                       }}
                     >
-                      <Icons.Copy className="inline-block h-3 w-3" /> {provider.id}:{m.id}
+                      <Icons.Copy className="inline-block h-3 w-3" /> {provider.id}/{m.id}
                     </button>
                   </td>
                 </tr>
@@ -209,7 +216,7 @@ export default function ProviderDetailPage() {
         open={showKeyModal}
         onClose={() => setShowKeyModal(false)}
         title="Add provider key"
-        description="Stored encrypted on this machine. Bigliner only ever shows a masked preview after save."
+        description="Stored encrypted on this machine. Nyth only ever shows a masked preview after save."
         size="md"
         footer={
           <>
@@ -228,7 +235,7 @@ export default function ProviderDetailPage() {
           </div>
           <div>
             <label className="field-label">API key</label>
-            <input className="field-input mt-1 font-mono" value={keyForm.apiKey} onChange={(e) => setKeyForm({ ...keyForm, apiKey: e.target.value })} placeholder="sk-… / sk-ant-… / etc" required type="password" />
+            <input className="field-input mt-1 font-mono" value={keyForm.apiKey} onChange={(e) => setKeyForm({ ...keyForm, apiKey: e.target.value })} placeholder="sk-... / sk-ant-... / etc" required type="password" />
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>

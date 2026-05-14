@@ -18,6 +18,7 @@ import oauthRoutes from './routes/oauth.js';
 import settingsRoutes from './routes/settings.js';
 import authJsonRoutes from './routes/authJson.js';
 import playgroundRoutes from './routes/playground.js';
+import systemRoutes from './routes/system.js';
 import v1Routes from './routes/v1.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -38,7 +39,7 @@ app.use((req, res, next) => {
   res.setHeader('access-control-allow-methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader(
     'access-control-allow-headers',
-    'content-type,authorization,x-bigliner-app,x-bigliner-session',
+    'content-type,authorization,x-nyth-app,x-nyth-session',
   );
   if (req.method === 'OPTIONS') return res.status(204).end();
   next();
@@ -47,7 +48,7 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
-    name: 'Bigliner',
+    name: 'Nyth Router',
     version: '0.2.0',
     uptime: Math.floor(process.uptime()),
     promptLogMode: config.promptLogMode,
@@ -64,6 +65,7 @@ app.use('/api/oauth', oauthRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/auth-json', authJsonRoutes);
 app.use('/api/playground', playgroundRoutes);
+app.use('/api/system', systemRoutes);
 app.use('/v1', v1Routes);
 
 // Serve built frontend in production-style mode
@@ -77,7 +79,7 @@ if (fs.existsSync(webDist)) {
 } else {
   app.get('/', (req, res) => {
     res.type('text/plain').send([
-      'Bigliner API is running.',
+      'Nyth Router API is running.',
       '',
       'The web UI hasn\'t been built yet.',
       'Run `npm run dev` to start the Vite dev server, or `npm run build` to generate web/dist.',
@@ -89,7 +91,7 @@ if (fs.existsSync(webDist)) {
 }
 
 app.use((err, req, res, next) => {
-  console.error('[bigliner] error:', err);
+  console.error('[nyth] error:', err);
   res.status(500).json({ ok: false, error: 'internal_error', detail: String(err.message || err) });
 });
 
@@ -97,5 +99,5 @@ setInterval(pruneOldLogs, 6 * 60 * 60 * 1000).unref();
 
 app.listen(config.port, config.host, () => {
   // eslint-disable-next-line no-console
-  console.log(`Bigliner server running at http://${config.host}:${config.port}`);
+  console.log(`Nyth Router server running at http://${config.host}:${config.port}`);
 });

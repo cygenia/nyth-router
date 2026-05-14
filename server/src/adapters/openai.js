@@ -1,19 +1,38 @@
 // OpenAI-compatible adapter. Forwards chat/completions to a base URL using the
 // standard OpenAI HTTP shape.
 
-export async function forwardChat({ baseUrl, apiKey, body, signal, authType = 'bearer' }) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function forwardChat({ baseUrl, apiKey, body, signal, authType = 'bearer', settings = {} }) {
   const headers = { 'content-type': 'application/json' };
   if (apiKey) {
     if (authType === 'api-key') headers['api-key'] = apiKey;
     else headers['authorization'] = `Bearer ${apiKey}`;
   }
   const url = trimTrailingSlash(baseUrl) + '/chat/completions';
-  const res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    signal,
-  });
+  const maxBootstrapAttempts = Math.max(1, Number(settings.streamBootstrapRetries || 0) + 1);
+  let res;
+  for (let attempt = 1; attempt <= maxBootstrapAttempts; attempt += 1) {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!body?.stream || !res.ok || res.body || attempt === maxBootstrapAttempts) break;
+    await sleep(Math.min(250 * attempt, 1000));
+  }
+  if (body?.stream && res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      stream: res.body,
+      streamKeepaliveSeconds: Number(settings.streamKeepaliveSeconds || 0),
+      headers: Object.fromEntries(res.headers.entries()),
+    };
+  }
+
   const text = await res.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }

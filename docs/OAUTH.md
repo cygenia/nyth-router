@@ -1,29 +1,29 @@
 # OAuth-style local app authorization
 
-Bigliner does **not** speak the public OAuth 2.0 grant flow against external IdPs. Instead it implements an OAuth-style local authorization flow so a developer can grant a local app access to Bigliner without sharing provider keys.
+Nyth Router does **not** speak the public OAuth 2.0 grant flow against external IdPs. Instead it implements an OAuth-style local authorization flow so a developer can grant a local app access to Nyth Router without sharing provider keys.
 
 ## Flow
 
 ```
                           ┌──────────────────────┐
-                          │  Bigliner dashboard  │
+                          │  Nyth Router dashboard  │
                           │   (logged in user)   │
                           └─────────▲────────────┘
                                     │ 4. user approves
                                     │
 ┌────────────┐  1. /authorize  ┌─────┴──────┐  5. issues token
-│  Local app │ ───────────────►│  Bigliner  │ ──────────────────► local app
+│  Local app │ ───────────────►│  Nyth Router  │ ──────────────────► local app
 └────────────┘                 │   server   │
         │                      └────────────┘
         │  2. registers app  ▲       │
-        │     (one-time)     │       │ 3. bigliner stores
+        │     (one-time)     │       │ 3. nyth stores
         │                    │       │    pending request
         └────────────────────┘       │
                                      ▼
                               SQLite: apps + app_tokens
 ```
 
-1. **Register** the app once in **OAuth Login → Register app**. Bigliner returns a `client_id` and `client_secret` (shown once).
+1. **Register** the app once in **OAuth Login → Register app**. Nyth Router returns a `client_id` and `client_secret` (shown once).
 2. The local app initiates an authorization request:
    ```
    GET /api/oauth/authorize
@@ -32,8 +32,8 @@ Bigliner does **not** speak the public OAuth 2.0 grant flow against external IdP
        &scope=chat:write,routes:use
    ```
 3. The dashboard shows an approval screen for the logged-in user.
-4. On approval, Bigliner issues a token bound to that app and the requested scopes.
-5. The token is delivered to the redirect URI as a fragment (`#token=…`) or, for CLI usage, displayed once in the dashboard.
+4. On approval, Nyth Router issues a token bound to that app and the requested scopes.
+5. The token is delivered to the redirect URI as a fragment (`#token=...`) or, for CLI usage, displayed once in the dashboard.
 
 ## Scopes
 
@@ -43,7 +43,7 @@ Bigliner does **not** speak the public OAuth 2.0 grant flow against external IdP
 | `chat:write`      | Call `/v1/chat/completions` and `/v1/embeddings`. |
 | `providers:read`  | List providers + masked keys. |
 | `usage:read`      | Read usage analytics. |
-| `routes:use`      | Resolve route aliases (`bigliner-smart`, etc). |
+| `routes:use`      | Resolve route aliases (`nyth-smart`, etc). |
 
 Scopes are additive; tokens carry the union of granted scopes.
 
@@ -56,7 +56,7 @@ Scopes are additive; tokens carry the union of granted scopes.
 
 ## Difference from unified API keys
 
-| Feature              | Unified `bl_…` key             | OAuth-style app token |
+| Feature              | Unified `bl_...` key             | OAuth-style app token |
 |----------------------|--------------------------------|------------------------|
 | Authentication       | Static bearer token            | Issued via approval flow |
 | Scope                | Routes / models / rate limit   | Fine-grained scopes |
@@ -66,9 +66,9 @@ Scopes are additive; tokens carry the union of granted scopes.
 
 ## Endpoints
 
-- `POST /api/oauth/apps` — register
-- `GET  /api/oauth/apps` — list
+- `POST /api/oauth/apps` - register
+- `GET  /api/oauth/apps` - list
 - `POST /api/oauth/apps/:id/secret/rotate`
 - `POST /api/oauth/authorize`
-- `POST /api/oauth/tokens` — issue
-- `DELETE /api/oauth/tokens/:id` — revoke
+- `POST /api/oauth/tokens` - issue
+- `DELETE /api/oauth/tokens/:id` - revoke

@@ -1,4 +1,3 @@
-import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
@@ -7,8 +6,10 @@ import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { ToastProvider } from './components/Toast';
 import { api, ApiError, session } from './lib/api';
+import { PreferencesProvider } from './lib/preferences';
 
 import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';
 import OverviewPage from './pages/OverviewPage';
 import ProvidersPage from './pages/ProvidersPage';
 import ProviderDetailPage from './pages/ProviderDetailPage';
@@ -18,9 +19,11 @@ import UsagePage from './pages/UsagePage';
 import LogsPage from './pages/LogsPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import OAuthLoginPage from './pages/OAuthLoginPage';
+import OAuthProviderLoginPage from './pages/OAuthProviderLoginPage';
 import OAuthManagePage from './pages/OAuthManagePage';
 import AuthJsonPage from './pages/AuthJsonPage';
 import SettingsPage from './pages/SettingsPage';
+import AboutPage from './pages/AboutPage';
 
 function ProtectedShell() {
   const [open, setOpen] = useState(false);
@@ -70,7 +73,7 @@ function ProtectedShell() {
       <div className="grid h-screen place-items-center text-ink-200">
         <div className="flex items-center gap-3">
           <span className="h-2 w-2 animate-ping rounded-full bg-aurora-mint" />
-          <span>Loading Bigliner…</span>
+          <span>Loading NYTH...</span>
         </div>
       </div>
     );
@@ -89,24 +92,25 @@ function ProtectedShell() {
       <div className="relative z-10 flex min-h-screen flex-1 flex-col md:pl-0">
         <Topbar onMenu={() => setOpen(true)} health={health} />
         <main className="pretty-scroll flex-1 overflow-y-auto">
-          <AnimatePresence mode="wait">
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<OverviewPage />} />
-              <Route path="/providers" element={<ProvidersPage />} />
-              <Route path="/providers/:id" element={<ProviderDetailPage />} />
-              <Route path="/routes" element={<RoutesPage />} />
-              <Route path="/playground" element={<PlaygroundPage />} />
-              <Route path="/usage" element={<UsagePage />} />
-              <Route path="/logs" element={<LogsPage />} />
-              <Route path="/api-keys" element={<ApiKeysPage />} />
-              <Route path="/oauth/login" element={<OAuthLoginPage />} />
-              <Route path="/oauth/manage" element={<OAuthManagePage />} />
-              <Route path="/auth-json" element={<AuthJsonPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AnimatePresence>
+          <Routes location={location}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/overview" element={<OverviewPage />} />
+            <Route path="/providers" element={<ProvidersPage />} />
+            <Route path="/providers/:id" element={<ProviderDetailPage />} />
+            <Route path="/routes" element={<RoutesPage />} />
+            <Route path="/playground" element={<PlaygroundPage />} />
+            <Route path="/usage" element={<UsagePage />} />
+            <Route path="/logs" element={<LogsPage />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
+            <Route path="/oauth/login" element={<OAuthProviderLoginPage />} />
+            <Route path="/oauth/internal" element={<OAuthLoginPage />} />
+            <Route path="/oauth/manage" element={<OAuthManagePage />} />
+            <Route path="/auth-json" element={<AuthJsonPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
     </div>
@@ -115,12 +119,14 @@ function ProtectedShell() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuroraBackground />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<ProtectedShell />} />
-      </Routes>
-    </ToastProvider>
+    <PreferencesProvider>
+      <ToastProvider>
+        <AuroraBackground />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<ProtectedShell />} />
+        </Routes>
+      </ToastProvider>
+    </PreferencesProvider>
   );
 }

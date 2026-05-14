@@ -10,14 +10,19 @@ export function formatCurrency(value: number | undefined | null) {
   return `$${value.toFixed(2)}`;
 }
 
+export function formatCost(value: number | undefined | null, incomplete?: boolean) {
+  if (incomplete) return value && value > 0 ? `${formatCurrency(value)}+` : 'Unpriced';
+  return formatCurrency(value);
+}
+
 export function formatLatency(ms: number | undefined | null) {
-  if (ms == null) return '—';
+  if (ms == null) return '-';
   if (ms < 1000) return `${Math.round(ms)} ms`;
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
 export function relativeTime(ts: number | undefined | null) {
-  if (!ts) return '—';
+  if (!ts) return '-';
   const diff = Date.now() - ts;
   if (diff < 30_000) return 'just now';
   if (diff < 60_000) return `${Math.round(diff / 1000)}s ago`;

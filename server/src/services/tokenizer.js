@@ -36,5 +36,5 @@ export function preview(value, maxLen = 240) {
   }
   text = text.replace(/\s+/g, ' ').trim();
   if (text.length <= maxLen) return text;
-  return `${text.slice(0, maxLen - 1)}…`;
+  return `${text.slice(0, Math.max(0, maxLen - 1))}…`;
 }

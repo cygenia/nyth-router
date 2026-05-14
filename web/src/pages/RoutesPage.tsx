@@ -4,6 +4,7 @@ import { Page } from '../components/Page';
 import { Skeleton } from '../components/Skeleton';
 import { Modal } from '../components/Modal';
 import { Empty } from '../components/Empty';
+import { Dropdown } from '../components/Dropdown';
 import { Icons } from '../lib/icons';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
@@ -32,22 +33,25 @@ export default function RoutesPage() {
   const [routes, setRoutes] = useState<RouteShape[]>([]);
   const [strategies, setStrategies] = useState<string[]>(['priority', 'cheapest', 'fastest', 'capability']);
   const [providers, setProviders] = useState<any[]>([]);
+  const [available, setAvailable] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<RouteShape | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [simulator, setSimulator] = useState({ model: 'bigliner-smart', decision: null as any });
+  const [simulator, setSimulator] = useState({ model: 'nyth-smart', decision: null as any });
   const toast = useToast();
 
   async function load() {
     setLoading(true);
     try {
-      const [rt, pv] = await Promise.all([
+      const [rt, pv, av] = await Promise.all([
         api<any>('/api/routes'),
         api<any>('/api/providers'),
+        api<any>('/api/providers/available-models'),
       ]);
       setRoutes(rt.routes || []);
       setStrategies(rt.strategies || []);
       setProviders(pv.providers || []);
+      setAvailable(av.providers || []);
     } finally { setLoading(false); }
   }
 
@@ -71,7 +75,7 @@ export default function RoutesPage() {
   return (
     <Page
       title="Routes"
-      description="Define how requests resolve. Use prefix routing (provider:model), aliases, or custom multi-step fallbacks."
+      description="Define how requests resolve. Use slash prefix routing (provider/model), aliases, or custom multi-step fallbacks."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setShowCreate(true)} className="btn-primary">
@@ -82,12 +86,12 @@ export default function RoutesPage() {
     >
       <section className="panel p-5">
         <h3 className="font-display text-base font-semibold text-ink-50">Route simulator</h3>
-        <p className="text-xs text-ink-300">Type any model string to see how Bigliner would resolve it.</p>
+        <p className="text-xs text-ink-300">Try a model name and see where it will go. Standard format is provider/model, for example codex/gpt-5.5.</p>
         <div className="mt-3 flex flex-col gap-2 md:flex-row">
           <input
             value={simulator.model}
             onChange={(e) => setSimulator({ ...simulator, model: e.target.value })}
-            placeholder="bigliner-fast, openai:gpt-5.5, anthropic:claude-opus-4.7…"
+            placeholder="nyth-fast, codex/gpt-5.5, openai/gpt-5.5, anthropic/claude-opus-4.7..."
             className="field-input flex-1 font-mono"
           />
           <button onClick={simulate} className="btn-primary">
@@ -140,7 +144,7 @@ export default function RoutesPage() {
                   <div key={idx} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-ink-900/60 px-3 py-2 text-sm">
                     <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-aurora-violet to-aurora-sky text-xs font-semibold text-ink-950">{idx + 1}</span>
                     <div className="flex-1">
-                      <div className="font-medium text-ink-50">{s.providerId}<span className="text-ink-300"> :: </span>{s.modelId || 'auto'}</div>
+                      <div className="font-mono font-medium text-ink-50">{s.modelId ? `${s.providerId}/${s.modelId}` : `${s.providerId}/auto`}</div>
                       <div className="text-xs text-ink-300">fallback on: {(s.fallbackOn || DEFAULT_FALLBACK).join(', ')}</div>
                     </div>
                     {idx < r.steps.length - 1 && <Icons.ArrowRight className="h-4 w-4 text-ink-300" />}
@@ -164,6 +168,7 @@ export default function RoutesPage() {
         onClose={() => { setShowCreate(false); setEditing(null); }}
         route={editing}
         providers={providers}
+        available={available}
         strategies={strategies}
         onSaved={() => { setShowCreate(false); setEditing(null); load(); }}
       />
@@ -172,12 +177,13 @@ export default function RoutesPage() {
 }
 
 function RouteEditor({
-  open, onClose, route, providers, strategies, onSaved,
+  open, onClose, route, providers, available, strategies, onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   route: RouteShape | null;
   providers: any[];
+  available: any[];
   strategies: string[];
   onSaved: () => void;
 }) {
@@ -192,6 +198,7 @@ function RouteEditor({
   });
   const [busy, setBusy] = useState(false);
   const toast = useToast();
+  const availableByProvider = useMemo(() => new Map((available || []).map((p: any) => [p.id, p])), [available]);
 
   useEffect(() => {
     if (route) {
@@ -265,9 +272,9 @@ function RouteEditor({
     <Modal
       open={open}
       onClose={onClose}
-      size="xl"
+      size="lg"
       title={route ? 'Edit route' : 'New route'}
-      description="Steps run top to bottom. If one fails for a matching reason, Bigliner falls back to the next."
+      description="Steps run from top to bottom. If one cannot be used, Nyth tries the next one."
       footer={
         <>
           <button onClick={onClose} className="btn-ghost">Cancel</button>
@@ -282,7 +289,7 @@ function RouteEditor({
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
             <label className="field-label">Alias (model string)</label>
-            <input className="field-input mt-1 font-mono" value={draft.alias} onChange={(e) => setDraft({ ...draft, alias: e.target.value })} placeholder="bigliner-smart" />
+            <input className="field-input mt-1 font-mono" value={draft.alias} onChange={(e) => setDraft({ ...draft, alias: e.target.value })} placeholder="nyth-smart" />
           </div>
           <div>
             <label className="field-label">Display name</label>
@@ -294,9 +301,12 @@ function RouteEditor({
           </div>
           <div>
             <label className="field-label">Strategy</label>
-            <select className="field-input mt-1" value={draft.strategy} onChange={(e) => setDraft({ ...draft, strategy: e.target.value })}>
-              {strategies.map((s) => <option key={s} value={s} className="bg-ink-950">{s}</option>)}
-            </select>
+<Dropdown
+value={draft. strategy}
+onChange={(value) => setDraft({...draft, strategy: value })}
+options={strategies.map((s) => ({ value: s, label: s }))}
+className="mt-1"
+/>
           </div>
           <label className="mt-7 flex cursor-pointer items-center gap-2 text-sm text-ink-100">
             <input type="checkbox" checked={!!draft.isDefault} onChange={(e) => setDraft({ ...draft, isDefault: e.target.checked })} className="h-4 w-4 rounded" />
@@ -339,22 +349,25 @@ function RouteEditor({
             <div key={idx} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
               <div className="flex items-center gap-2 text-xs text-ink-300">Step {idx + 1}</div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
-                <select
-                  value={step.providerId}
-                  onChange={(e) => setStep(idx, { providerId: e.target.value })}
-                  className="rounded-2xl border border-white/10 bg-ink-900/60 px-3 py-2 text-sm text-ink-100"
-                >
-                  <option value="" className="bg-ink-950">Pick provider</option>
-                  {providers.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-ink-950">{p.name} · {p.id}</option>
-                  ))}
-                </select>
-                <input
-                  className="rounded-2xl border border-white/10 bg-ink-900/60 px-3 py-2 font-mono text-sm text-ink-100"
-                  placeholder="modelId (e.g. gpt-5.5)"
-                  value={step.modelId || ''}
-                  onChange={(e) => setStep(idx, { modelId: e.target.value })}
-                />
+<Dropdown
+value={step. providerId}
+onChange={(value) => {
+const nextProvider = value;
+const firstModel = (availableByProvider.get(nextProvider)?.models || [])[0]?.id || '';
+setStep(idx, { providerId: nextProvider, modelId: firstModel });
+}}
+options={[{ value: '', label: 'Pick provider' }, ... providers.map((p) => ({ value: p.id, label: `${p.name}, ${p.id}` }))]}
+buttonClassName="!rounded-2xl !bg-ink-900/60 !px-3 !py-2 !text-sm !text-ink-100"
+/>
+<Dropdown
+value={step. modelId || ''}
+onChange={(value) => setStep(idx, { modelId: value })}
+options={[
+{ value: '', label: 'Pick model' },
+... (availableByProvider.get(step. providerId)?.models || providers.find((p) => p.id === step. providerId)?.models || []).map((m: any) => ({ value: m.id, label: `${m.id} — ${m.displayName || m.display || m.id}` })),
+]}
+buttonClassName="!rounded-2xl !bg-ink-900/60 !px-3 !py-2 !font-mono !text-sm !text-ink-100"
+/>
                 <input
                   className="rounded-2xl border border-white/10 bg-ink-900/60 px-3 py-2 text-sm text-ink-100"
                   placeholder="fallback on (comma list)"

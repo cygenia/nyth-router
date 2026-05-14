@@ -14,7 +14,7 @@ export function syncRegistry() {
       name = excluded.name,
       category = excluded.category,
       format = excluded.format,
-      base_url = COALESCE(providers.base_url, excluded.base_url),
+      base_url = excluded.base_url,
       auth_type = excluded.auth_type,
       capabilities = excluded.capabilities,
       docs_url = excluded.docs_url,
@@ -36,6 +36,7 @@ export function syncRegistry() {
       metadata_only = excluded.metadata_only,
       updated_at = excluded.updated_at
   `);
+  const deleteMissingModel = db.prepare('DELETE FROM models WHERE provider_id = ? AND id = ?');
   const now = Date.now();
   const tx = db.transaction(() => {
     for (const p of registry) {
@@ -54,6 +55,10 @@ export function syncRegistry() {
         now,
         now,
       );
+      const registryModelIds = new Set((p.models || []).map((model) => model.id));
+      for (const row of db.prepare('SELECT id FROM models WHERE provider_id = ?').all(p.id)) {
+        if (!registryModelIds.has(row.id)) deleteMissingModel.run(p.id, row.id);
+      }
       for (const m of p.models || []) {
         insertModel.run(
           p.id,

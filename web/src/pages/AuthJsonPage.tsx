@@ -34,13 +34,13 @@ export default function AuthJsonPage() {
 
   return (
     <Page
-      title="Auth JSON"
-      description="Import or export Bigliner auth configuration. Exports never include secret values — they are redacted by default."
+      title="Saved access"
+      description="Import or export saved access settings. Secrets stay hidden by default."
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="panel p-5">
           <h3 className="font-display text-lg font-semibold text-ink-50">Sample config</h3>
-          <p className="text-xs text-ink-300">Use this as a starting point — paste into "Import" to seed.</p>
+          <p className="text-xs text-ink-300">Use this as a starting point - paste into "Import" to seed.</p>
           <pre className="mt-3 max-h-80 overflow-auto pretty-scroll rounded-2xl border border-white/10 bg-ink-900/70 p-3 text-xs text-ink-100">
 {sample ? JSON.stringify(sample, null, 2) : '...'}
           </pre>
@@ -54,7 +54,7 @@ export default function AuthJsonPage() {
 
         <section className="panel p-5">
           <h3 className="font-display text-lg font-semibold text-ink-50">Export current config</h3>
-          <p className="text-xs text-ink-300">Always redacted — secrets stay local.</p>
+          <p className="text-xs text-ink-300">Always redacted - secrets stay local.</p>
           <button onClick={loadExport} className="btn-primary mt-3">
             <Icons.ArrowDownToLine className="h-4 w-4" /> Generate export
           </button>

@@ -94,10 +94,18 @@ export function revealKey(id) {
 export function pickKeyForProvider(providerId) {
   const keys = listKeysForProvider(providerId, { onlyEnabled: true });
   if (!keys.length) return null;
-  const top = keys[0];
+  const usable = keys.filter((key) => !isCoolingDown(key.lastError));
+  const pool = usable.length ? usable : keys;
+  const top = pool[0];
   const decrypted = revealKey(top.id);
   if (!decrypted) return null;
-  return { ...top, apiKey: decrypted };
+  return { ...top, apiKey: decrypted, rotatedFromError: !usable.length && keys.length > 1 };
+}
+
+function isCoolingDown(error) {
+  if (!error) return false;
+  const text = String(error).toLowerCase();
+  return text.includes('429') || text.includes('rate') || text.includes('quota') || text.includes('timeout');
 }
 
 export function recordKeyUsage(id, { error } = {}) {

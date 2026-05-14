@@ -1,4 +1,4 @@
--- Bigliner SQLite schema
+-- Nyth SQLite schema
 -- Each statement is idempotent so it can run on every boot.
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -122,6 +122,8 @@ CREATE TABLE IF NOT EXISTS unified_api_keys (
   label TEXT NOT NULL,
   key_hash TEXT NOT NULL,
   key_prefix TEXT NOT NULL,
+  encrypted_key TEXT,
+  masked_key TEXT,
   rate_limit_per_min INTEGER,
   allowed_routes TEXT NOT NULL DEFAULT '[]',
   allowed_models TEXT NOT NULL DEFAULT '[]',
@@ -133,12 +135,44 @@ CREATE TABLE IF NOT EXISTS unified_api_keys (
 
 CREATE INDEX IF NOT EXISTS idx_unified_keys_hash ON unified_api_keys(key_hash);
 
+CREATE TABLE IF NOT EXISTS oauth_provider_accounts (
+  id TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL,
+  provider_name TEXT NOT NULL,
+  account_label TEXT,
+  account_subject TEXT,
+  account_email TEXT,
+  token_type TEXT,
+  scope TEXT,
+  expires_at INTEGER,
+  encrypted_access_token TEXT NOT NULL,
+  encrypted_refresh_token TEXT,
+  masked_access_token TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  plan_name TEXT,
+  quota_status TEXT,
+  quota_reset_cadence TEXT,
+  quota_next_reset_at INTEGER,
+  last_health_ok INTEGER,
+  last_health_status INTEGER,
+  last_health_error TEXT,
+  last_health_checked_at INTEGER,
+  oauth_metadata TEXT,
+  last_used_at INTEGER,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_oauth_provider_accounts_provider ON oauth_provider_accounts(provider_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_provider_accounts_default ON oauth_provider_accounts(provider_id, is_default);
+
 CREATE TABLE IF NOT EXISTS request_logs (
   id TEXT PRIMARY KEY,
   ts INTEGER NOT NULL,
   app_id TEXT,
   app_name TEXT,
   unified_key_id TEXT,
+  oauth_account_id TEXT,
   route_id TEXT,
   route_alias TEXT,
   provider_id TEXT,
@@ -161,6 +195,7 @@ CREATE TABLE IF NOT EXISTS request_logs (
 
 CREATE INDEX IF NOT EXISTS idx_logs_ts ON request_logs(ts);
 CREATE INDEX IF NOT EXISTS idx_logs_provider ON request_logs(provider_id);
+CREATE INDEX IF NOT EXISTS idx_logs_oauth_account ON request_logs(provider_id, oauth_account_id);
 CREATE INDEX IF NOT EXISTS idx_logs_app ON request_logs(app_id);
 CREATE INDEX IF NOT EXISTS idx_logs_status ON request_logs(status);
 
@@ -206,7 +241,8 @@ CREATE INDEX IF NOT EXISTS idx_fingerprint ON prompt_fingerprints(fingerprint);
 
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
-  expires_at INTEGER NOT NULL,
+  expires_at INTEGER,
+  duration TEXT NOT NULL DEFAULT 'remember',
   created_at INTEGER NOT NULL
 );
 

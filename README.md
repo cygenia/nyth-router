@@ -1,103 +1,244 @@
-# Bigliner
+# Nyth
 
-Bigliner is an AI gateway for routing requests across multiple model providers with unified authentication, fallback routing, usage analytics, and operational visibility.
+Nyth is a private model workspace for running many AI providers behind one local, OpenAI-compatible API. It gives you a clean dashboard, unified app keys, routing, fallback paths, usage visibility, and a local encrypted vault for provider credentials.
 
-It gives teams one application-facing API surface while provider keys, route policies, logs, and cost controls are managed from a single dashboard.
+Use it on a laptop, workstation, home server, cloud VM, VPS, or any Linux box that can run Node.js.
 
-```
-┌──────────┐    bl_********   ┌──────────────┐    provider keys    ┌────────────┐
-│  Apps    │ ───────────────► │   Bigliner   │ ───────────────────►│  OpenAI    │
-│ Services │                  │  AI Gateway  │                     │  Anthropic │
-└──────────┘                  └──────────────┘                     │  Gemini    │
-                                  ▲   ▲                            │  Groq      │
-                              dashboard │                          │  Mistral   │
-                              + logs    │                          │  Ollama    │
-                                        └─ encrypted SQLite vault  │  …         │
-                                                                   └────────────┘
+Dashboard URL after install:
+
+```text
+http://localhost:9879/
 ```
 
-## Highlights
+## Why Nyth
 
-- Multi-provider routing: manage OpenAI-compatible and Anthropic-compatible traffic from one gateway.
-- Unified API keys: issue scoped `bl_…` keys for applications without exposing provider credentials.
-- Route builder: configure prefix routes, aliases, default routes, fallback chains, and model selection rules.
-- Provider registry: 100+ providers and 175+ models with capability, category, and status metadata.
-- Usage analytics: requests, tokens, estimated cost, latency percentiles, fallback events, expensive prompts, and repeated prompt detection.
-- Token Saver: optional compression for verbose tool outputs and assistant outputs with configurable safety modes.
-- Playground: test prompts, inspect route decisions, generate cURL examples, and compare estimated cost.
-- OAuth-style app authorization: register apps, approve scopes, issue tokens, revoke access, and rotate client secrets.
-- Encrypted key vault: provider keys are encrypted at rest with AES-256-GCM using a deployment master key.
-- Privacy controls: prompt logging can be set to `off`, `metadata`, `preview`, or `full`.
-- Dashboard: React interface with provider management, routes, logs, API keys, auth JSON import/export, settings, and operational charts.
+- One local `/v1/chat/completions` endpoint for your apps.
+- One unified key per app, separate from provider API keys.
+- Provider and model registry with route builder.
+- Fallback routes when a provider is unavailable.
+- Usage, cost, latency, request logs, and token visibility.
+- Prompt logging controls: `off`, `metadata`, `preview`, or `full`.
+- Local SQLite storage with encrypted provider-key vault.
+- Works without sending provider credentials to any hosted control plane.
 
-## Quick start
+## Public repository safety
+
+This repo is designed to be clean for public GitHub distribution.
+
+Never commit runtime secrets or local state:
+
+- `.env` and `.env.*` are ignored, except `.env.example`.
+- `server/data/*.db`, `server/data/*.db-wal`, `server/data/*.db-shm`, and `server/data/master.key` are ignored.
+- Provider keys, OAuth accounts, refresh tokens, dashboard sessions, app tokens, request logs, prompt logs, exported configs, and local databases must stay local.
+- Do not commit screenshots or logs from a real deployment.
+- Use `http://localhost:9879/` in docs and examples, not a VPS IP address.
+
+## Requirements
+
+- Node.js 20 or newer.
+- npm 10 or newer.
+- Git.
+
+Check versions:
 
 ```bash
+node --version
+npm --version
+git --version
+```
+
+## Manual installation from terminal
+
+```bash
+git clone https://github.com/cygenia/nyth-router.git
+cd nyth-router
 cp .env.example .env
-# Edit .env and set BIGLINER_PASSWORD and BIGLINER_MASTER_KEY
-npm install
+```
+
+Open `.env` and set a dashboard password before first login:
+
+```text
+NYTH_PASSWORD=<choose-a-password-at-least-15-characters>
+HOST=localhost
+PORT=9879
+PUBLIC_BASE_URL=http://localhost:9879
+```
+
+Install, build, and start:
+
+```bash
+npm ci
 npm run build
 npm start
 ```
 
-Set the bind address and public URL for your own environment. For production, run Bigliner behind HTTPS using a reverse proxy or managed ingress.
+Open:
 
-## Configuration
+```text
+http://localhost:9879/
+```
+
+Login with the `NYTH_PASSWORD` you placed in `.env`.
+
+## Manual installation from VS Code
+
+1. Open VS Code.
+2. Clone the repository with `Git: Clone`, or open a VS Code terminal and run:
+
+   ```bash
+   git clone https://github.com/cygenia/nyth-router.git
+   cd nyth-router
+   ```
+
+3. Copy the environment template:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Edit `.env` in VS Code and set:
+
+   ```text
+   NYTH_PASSWORD=<choose-a-password-at-least-15-characters>
+   HOST=localhost
+   PORT=9879
+   PUBLIC_BASE_URL=http://localhost:9879
+   ```
+
+5. Install and start:
+
+   ```bash
+   npm ci
+   npm run build
+   npm start
+   ```
+
+6. Open `http://localhost:9879/` and login with your dashboard password.
+
+## Development mode
+
+Run backend and Vite frontend together:
+
+```bash
+npm install
+npm run dev
+```
+
+Development URLs:
+
+- Web dev server: `http://localhost:5173/`
+- Backend API: `http://localhost:9879/`
+
+## Environment variables
 
 Minimum `.env`:
 
 ```text
-BIGLINER_PASSWORD=<dashb...ord>
-BIGLINER_MASTER_KEY=<long-random-master-key>
-HOST=0.0.0.0
-PORT=<port>
-PUBLIC_BASE_URL=https://bigliner.example.com
-NODE_ENV=production
-BIGLINER_PROMPT_LOG_MODE=preview
+NYTH_PASSWORD=<choose-a-password-at-least-15-characters>
+HOST=localhost
+PORT=9879
+PUBLIC_BASE_URL=http://localhost:9879
 ```
 
-Prompt log modes:
+Optional `.env`:
 
-- `off`: store no prompt content.
-- `metadata`: store metadata only.
-- `preview`: store a short preview snippet.
-- `full`: store full prompt content.
+```text
+NYTH_MASTER_KEY=<long-random-master-key>
+NYTH_DB_PATH=
+NYTH_LOG_RETENTION_DAYS=30
+NYTH_PROMPT_LOG_MODE=preview
+NODE_ENV=production
+```
 
-## VPS deployment from Git
+Notes:
 
-Example deployment from the GitHub repository:
+- `NYTH_PASSWORD` is required for dashboard login. Use at least 15 characters.
+- `NYTH_MASTER_KEY` encrypts provider credentials at rest. If omitted, Nyth creates `server/data/master.key` locally.
+- Keep `.env` private. It is ignored by Git and must never be uploaded.
+
+## First dashboard setup
+
+1. Login with `NYTH_PASSWORD`.
+2. Add provider credentials in Providers, or configure a local/self-hosted provider.
+3. Create or adjust routes in Routes.
+4. Create a unified application key in API Keys.
+5. Test prompts in Playground.
+6. Monitor activity in Usage and Logs.
+
+No provider credentials or connected accounts are included by default.
+
+## Calling Nyth from an app
+
+Create a unified key in the dashboard, then call the local endpoint:
 
 ```bash
-mkdir -p /home/ubuntu/apps
-git clone https://github.com/halucyyy/bigliner.git /home/ubuntu/apps/bigliner
-cd /home/ubuntu/apps/bigliner
-
-npm ci
-npm run build
-
-cat > .env <<'EOF'
-BIGLINER_PASSWORD=<dashb...ord>
-BIGLINER_MASTER_KEY=<long-random-master-key>
-HOST=0.0.0.0
-PORT=<port>
-PUBLIC_BASE_URL=https://bigliner.example.com
-NODE_ENV=production
-BIGLINER_PROMPT_LOG_MODE=preview
-EOF
-chmod 600 .env
+curl http://localhost:9879/v1/chat/completions \
+  -H 'authorization: Bearer <your-local-app-key>' \
+  -H 'content-type: application/json' \
+  --data '{
+    "model": "nyth-smart",
+    "messages": [{"role": "user", "content": "hello"}]
+  }'
 ```
 
-Systemd unit example:
+Nyth resolves the route alias, forwards the request to a configured provider, and normalizes the response.
+
+## Default route aliases
+
+A fresh install seeds route aliases such as:
+
+- `nyth-smart`
+- `nyth-fast`
+- `nyth-cheap`
+- `nyth-vision`
+- `nyth-local`
+
+Edit them from the Routes page after adding providers.
+
+## Project layout
+
+```text
+nyth-router/
+  server/                Node + Express backend
+    src/
+      adapters/          Provider adapters
+      db/                SQLite schema + connection
+      lib/               Crypto + ID helpers
+      registry/          Provider/model registry
+      routes/            HTTP route handlers
+      services/          Auth, vault, routing, analytics, gateway
+      index.js           Server entrypoint
+    test/                Node test suite
+  web/                   React + Vite + Tailwind dashboard
+  docs/                  Reference docs
+  scripts/               Maintenance and safety scripts
+  .env.example           Environment template
+  package.json           Workspace root
+```
+
+## Scripts
+
+```bash
+npm run dev      # backend + Vite dev server
+npm run build    # build dashboard into web/dist
+npm start        # build dashboard and run production server
+npm test         # run server tests
+npm run lint     # syntax/lint checks
+```
+
+## Linux service example
+
+Example systemd unit for a Linux server. Adjust paths and user to your machine.
 
 ```ini
 [Unit]
-Description=Bigliner AI Gateway
+Description=Nyth
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/ubuntu/apps/bigliner
-EnvironmentFile=/home/ubuntu/apps/bigliner/.env
+WorkingDirectory=/opt/nyth-router
+EnvironmentFile=/opt/nyth-router/.env
 ExecStart=/usr/bin/npm run start -w server
 Restart=always
 RestartSec=5
@@ -108,137 +249,29 @@ Group=ubuntu
 WantedBy=multi-user.target
 ```
 
-After installing the unit:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now bigliner
-curl https://bigliner.example.com/api/health
-```
-
-For direct internal checks, call the service on the bind address and port you configured in `.env`.
-
-## Calling the gateway
-
-Applications authenticate with a unified Bigliner key created from the API Keys page.
-
-```bash
-curl https://bigliner.example.com/v1/chat/completions \
-  -H 'authorization: Bearer bl_your_key' \
-  -H 'content-type: application/json' \
-  --data '{
-    "model": "openai:gpt-5.5-mini",
-    "messages": [{"role": "user", "content": "hello"}]
-  }'
-```
-
-Bigliner resolves the model or route alias, forwards the request to the selected provider, and normalizes the response to an OpenAI-compatible chat completion shape.
-
-## Routing model strings
-
-| Form | Example | Behavior |
-|---|---|---|
-| `provider:model` | `openai:gpt-5.5` | Direct route to that provider and model. |
-| Route alias | `bigliner-cheap` | Resolves through the configured alias chain. |
-| Bare model id | `claude-opus-4.7` | Looks up the model registry, then falls back to the default route if needed. |
-| Empty / unknown | empty model field | Uses the configured default route. |
-
-Default aliases seeded on first boot:
-
-- `bigliner-smart`
-- `bigliner-fast`
-- `bigliner-cheap`
-- `bigliner-vision`
-- `bigliner-local`
-
-## Dashboard pages
-
-| Page | Purpose |
-|---|---|
-| Overview | System status, traffic range selector, cost insights, latency, fallback feed. |
-| Providers | Provider registry with status, capability, and category filters. |
-| Provider detail | Model list, provider keys, add/enable/delete key actions, connection test. |
-| Routes | Prefix routes, aliases, fallback routes, and route simulator. |
-| Playground | Test requests, inspect route decision, see estimated cost, generate cURL. |
-| Usage | Provider/model/app analytics, charts, and CSV export. |
-| Logs | Request log viewer with filters and request detail drawer. |
-| API Keys | Create, rotate, revoke, scope, and rate-limit unified keys. |
-| OAuth Login | Register apps, approve scopes, and issue tokens. |
-| OAuth Manage | Manage apps and tokens, rotate client secrets. |
-| Auth JSON | Import/export auth configuration with secret redaction. |
-| Settings | Password, default route, Token Saver, prompt logging, retention, runtime info, reset controls. |
-
-## Token Saver
-
-Token Saver can reduce context size before requests are forwarded:
-
-- Compress tool output.
-- Optionally compress assistant output.
-- Select safety mode: safe, balanced, or aggressive.
-- Limit maximum tool-output characters.
-- Track before/after token estimates in gateway metadata.
-
-This is useful for agent workflows where verbose command output, logs, stack traces, or repeated context can inflate token usage.
-
-## Documentation
-
-- `docs/PROVIDERS.md` — provider registry, statuses, and custom provider notes.
-- `docs/ROUTING.md` — route engine, aliases, fallback chains, and conditions.
-- `docs/OAUTH.md` — app authorization flow, scopes, and token handling.
-- `docs/SECURITY.md` — encryption, secrets handling, and prompt logging modes.
-- `docs/API.md` — HTTP endpoint reference for `/api/*` and `/v1/*`.
-
-## Project layout
+Then open through your own tunnel/reverse proxy, or locally with:
 
 ```text
-bigliner/
-  server/                # Node + Express backend
-    src/
-      adapters/          # Provider adapters
-      db/                # SQLite schema + connection
-      lib/               # Crypto + ID helpers
-      registry/          # Provider/model registry
-      routes/            # HTTP route handlers
-      services/          # Auth, vault, routing, analytics, gateway, token saver
-      index.js           # Server entrypoint
-    test/                # Node test suite
-  web/                   # React + Vite + Tailwind dashboard
-  docs/                  # Reference docs
-  .env.example           # Environment template
-  package.json           # Workspace root
+http://localhost:9879/
 ```
 
-## Scripts
+## Security checklist before publishing or deploying
 
-- `npm run dev` — run server and Vite dev server in parallel.
-- `npm run build` — build the web dashboard into `web/dist`.
-- `npm start` — run the production server from the server workspace.
-- `npm test` — run the Node test suite.
-- `npm run lint` — run syntax checks and web lint.
+Before pushing your own fork or deploying a public instance:
 
-## Roadmap
-
-- Streaming relay for SSE clients.
-- Additional native provider adapters.
-- Docker image publishing.
-- Response cache and repeated prompt optimization.
-- Per-key webhook notifications.
-
-## Hugging Face Spaces demo deployment
-
-Bigliner can run as a Docker Space for demos. Keep real secrets in Space secrets, not in the repository.
-
-Recommended Space variables/secrets:
-
-```text
-BIGLINER_PASSWORD=<dashboard-password-min-15-characters>
-BIGLINER_MASTER_KEY=<long-random-master-key>
-HOST=0.0.0.0
-PORT=7860
-BIGLINER_PROMPT_LOG_MODE=preview
+```bash
+git status --ignored --short
+git diff --check
+npm test
+npm run build
 ```
 
-The included `Dockerfile` builds the web dashboard and starts the server on the Hugging Face Spaces default port.
+Also verify:
+
+- `.env` is not tracked.
+- `server/data/` is not tracked.
+- No logs, cache folders, database files, refresh tokens, provider keys, passwords, emails, or machine-specific IP addresses are staged.
+- `.env.example` contains placeholders only.
 
 ## License
 
