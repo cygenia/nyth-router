@@ -32,10 +32,6 @@ Use this base URL in OpenAI-compatible clients, with a unified key created from 
 
 Nyth turns a local machine or VPS into a private AI gateway. Your apps talk to one OpenAI-compatible endpoint while Nyth handles provider credentials, model routing, fallback decisions, usage visibility, and dashboard operations.
 
-<div align="center">
-  <img src="web/public/brand/nyth-mascot-aurora.png" alt="Nyth dashboard illustration" width="360" />
-</div>
-
 ```text
 Apps / Agents / IDEs
         │
