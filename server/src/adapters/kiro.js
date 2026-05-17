@@ -131,31 +131,22 @@ function convertMessages(messages, tools, model) {
   };
 
   for (const msg of messages) {
+    // Kiro's GenerateAssistantResponse endpoint is stricter than OpenAI/Anthropic
+    // chat APIs. Prior assistant tool_calls plus tool result messages frequently
+    // make CodeWhisperer return `Improperly formed request`. Keep the stable
+    // path for agent/coding sessions: send user/system transcript only, and put
+    // tool definitions on the current user message below.
+    if (msg.role === 'tool' || msg.role === 'assistant') {
+      if (pendingRole) flush();
+      pendingRole = null;
+      continue;
+    }
+
     let role = msg.role;
-    if (role === 'system' || role === 'tool') role = 'user';
+    if (role === 'system') role = 'user';
     if (role !== pendingRole && pendingRole) flush();
     pendingRole = role;
 
-    if (msg.role === 'tool') {
-      pendingToolResults.push({ toolUseId: msg.tool_call_id, status: 'success', content: [{ text: stringifyContent(msg.content) }] });
-      continue;
-    }
-    if (role === 'assistant') {
-      pendingText.push(stringifyContent(msg.content));
-      if (Array.isArray(msg.tool_calls) && msg.tool_calls.length) {
-        flush();
-        const last = history[history.length - 1];
-        if (last?.assistantResponseMessage) {
-          last.assistantResponseMessage.toolUses = msg.tool_calls.map((tc) => ({
-            toolUseId: tc.id || crypto.randomUUID(),
-            name: tc.function?.name || tc.name || 'tool',
-            input: safeJson(tc.function?.arguments, tc.input || {}),
-          }));
-        }
-        pendingRole = null;
-      }
-      continue;
-    }
     const { text, images } = extractUserContent(msg.content, supportsImages);
     if (text) pendingText.push(text);
     pendingImages.push(...images);

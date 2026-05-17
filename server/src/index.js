@@ -15,6 +15,7 @@ import routeRoutes from './routes/routes.js';
 import usageRoutes from './routes/usage.js';
 import logRoutes from './routes/logs.js';
 import oauthRoutes from './routes/oauth.js';
+import { startOAuthAutoRefresh } from './services/oauthPkce.js';
 import settingsRoutes from './routes/settings.js';
 import authJsonRoutes from './routes/authJson.js';
 import playgroundRoutes from './routes/playground.js';
@@ -96,6 +97,7 @@ app.use((err, req, res, next) => {
 });
 
 setInterval(pruneOldLogs, 6 * 60 * 60 * 1000).unref();
+startOAuthAutoRefresh();
 
 app.listen(config.port, config.host, () => {
   // eslint-disable-next-line no-console

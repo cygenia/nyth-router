@@ -9,6 +9,8 @@ const connected = new Map();
 const refreshLocks = new Map();
 
 const REFRESH_SKEW_MS = 5 * 60 * 1000;
+const AUTO_REFRESH_INTERVAL_MS = Number(process.env.NYTH_OAUTH_AUTO_REFRESH_INTERVAL_MS || 35 * 60 * 1000);
+const AUTO_REFRESH_WINDOW_MS = Number(process.env.NYTH_OAUTH_AUTO_REFRESH_WINDOW_MS || 45 * 60 * 1000);
 
 const PROVIDERS = {
   codex: {
@@ -176,18 +178,19 @@ export function getOauthStatus() {
   };
 }
 
-export async function autoImportKiroAccount() {
-  return autoRepairKiroAccount();
+export async function autoImportKiroAccount(accountEmail = '') {
+  return autoRepairKiroAccount(null, accountEmail);
 }
 
-export async function autoRepairKiroAccount(accountId = null) {
+export async function autoRepairKiroAccount(accountId = null, accountEmail = '') {
   const detected = await autoDetectKiroRefreshToken();
   if (!detected.found) return { ok: false, ...detected };
   const provider = PROVIDERS.kiro;
   try {
-    const tokenData = await refreshKiroToken(detected.refreshToken);
+    const tokenData=await refreshKiroToken(detected.refreshToken);
     const identity = decodeKiroIdentity(tokenData.accessToken);
-    const exchange = buildKiroExchange(provider, tokenData, detected.refreshToken, identity, 'kiro-cache-repair');
+    const exchange = buildKiroExchange(provider, tokenData, detected.refreshToken, identity, 'kiro-cache-repair', accountEmail);
+
     const existing = accountId
       ? db.prepare('SELECT id FROM oauth_provider_accounts WHERE provider_id = ? AND id = ?').get('kiro', accountId)
       : db.prepare('SELECT id FROM oauth_provider_accounts WHERE provider_id = ? ORDER BY is_default DESC, updated_at DESC LIMIT 1').get('kiro');
@@ -202,12 +205,12 @@ export async function autoRepairKiroAccount(accountId = null) {
   }
 }
 
-export async function importKiroRefreshToken(refreshToken) {
+export async function importKiroRefreshToken(refreshToken, accountEmail = '') {
   const provider = PROVIDERS.kiro;
   try {
-    const tokenData=await refreshKiroToken(refreshToken);
+    const tokenData = await refreshKiroToken(refreshToken);
     const identity = decodeKiroIdentity(tokenData.accessToken);
-    const exchange = buildKiroExchange(provider, tokenData, refreshToken, identity, 'kiro-refresh-token-import');
+    const exchange = buildKiroExchange(provider, tokenData, refreshToken, identity, 'kiro-refresh-token-import', accountEmail);
     const account = await storeConnectedAccount('kiro', provider, exchange);
     return { ok: true, provider: provider.name, status: 'connected', sourceType: 'secure-local-paste', account: sanitizeAccount(account) };
   } catch (err) {
@@ -402,8 +405,51 @@ async function tryRepairKiroFromCache(row, targetRow = row, originalError = null
   }
 }
 
-function shouldRefresh(row) {
-  return !!row?.expiresAt && row.expiresAt <= Date.now() + REFRESH_SKEW_MS;
+function shouldRefresh(row, skewMs = REFRESH_SKEW_MS) {
+  return !!row?.expiresAt && row.expiresAt <= Date.now() + skewMs;
+}
+
+export async function refreshExpiringAccounts({ windowMs = AUTO_REFRESH_WINDOW_MS } = {}) {
+  const rows = db.prepare(`
+    SELECT id, provider_id AS providerId, account_subject AS accountSubject,
+           encrypted_access_token AS accessToken, encrypted_refresh_token AS refreshToken,
+           expires_at AS expiresAt, oauth_metadata AS oauthMetadata
+    FROM oauth_provider_accounts
+    WHERE expires_at IS NOT NULL
+      AND encrypted_refresh_token IS NOT NULL
+      AND encrypted_refresh_token != ''
+      AND COALESCE(quota_status, '') NOT IN ('quota_exhausted', 'expired')
+      AND expires_at <= ?
+    ORDER BY expires_at ASC
+  `).all(Date.now() + windowMs);
+  let refreshed = 0;
+  let failed = 0;
+  for (const row of rows) {
+    const result = await withRefreshLock(row.providerId, row.id, async () => {
+      const latest = loadRefreshableAccount(row.providerId, row.id);
+      if (!latest) return { ok: false, error: 'oauth_account_not_found' };
+      if (!shouldRefresh(latest, windowMs)) return { ok: true, skipped: true };
+      return refreshAccount(latest, row);
+    });
+    if (result?.ok && !result.skipped) refreshed += 1;
+    if (!result?.ok) failed += 1;
+  }
+  return { ok: true, checked: rows.length, refreshed, failed };
+}
+
+export function startOAuthAutoRefresh({ intervalMs = AUTO_REFRESH_INTERVAL_MS, windowMs = AUTO_REFRESH_WINDOW_MS } = {}) {
+  const safeIntervalMs = Number.isFinite(intervalMs) && intervalMs > 0 ? intervalMs : 35 * 60 * 1000;
+  const safeWindowMs = Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 45 * 60 * 1000;
+  const run = () => {
+    refreshExpiringAccounts({ windowMs: safeWindowMs }).catch((err) => {
+      // Never log token material; only generic scheduler failure.
+      console.warn('[nyth] oauth auto-refresh failed:', String(err.message || err).slice(0, 160));
+    });
+  };
+  const timer = setInterval(run, safeIntervalMs);
+  timer.unref?.();
+  setTimeout(run, 10_000).unref?.();
+  return timer;
 }
 
 function refreshLockKey(providerId, accountId) {
@@ -674,7 +720,10 @@ function sanitizeAccount(account) {
   return { ...account, accessToken: undefined, refreshToken: undefined, encryptedAccessToken: undefined, encryptedRefreshToken: undefined };
 }
 
-function buildKiroExchange(provider, tokenData, fallbackRefreshToken, identity, authMethod) {
+function buildKiroExchange(provider, tokenData, fallbackRefreshToken, identity, authMethod, manualAccountEmail = '') {
+  const emailHint = normalizeEmailHint(manualAccountEmail);
+  const accountEmail = emailHint || identity.email || null;
+  const accountLabel = accountEmail || identity.label || null;
   return {
     ok: true,
     accessToken: tokenData.accessToken,
@@ -682,18 +731,25 @@ function buildKiroExchange(provider, tokenData, fallbackRefreshToken, identity, 
     tokenType: tokenData.tokenType || 'Bearer',
     expiresIn: tokenData.expiresIn || 3600,
     scope: provider.scopes.join(' '),
-    accountEmail: identity.email,
+    accountEmail,
     accountSubject: identity.subject,
-    accountLabel: identity.label,
+    accountLabel,
     metadata: {
       profileArn: tokenData.profileArn || null,
       authMethod,
       identityClaims: identity.rawClaims || {},
-      identityDetection: identity.email ? 'jwt_email' : 'jwt_no_email_claim',
-      identityHint: identity.email ? null : 'Kiro refresh token produced no email claim. Re-import after Kiro.dev login if the AWS SSO cache contains a newer token.',
+      manualAccountEmail: emailHint || null,
+      identityDetection: emailHint ? 'manual_email_hint' : identity.email ? 'jwt_email' : 'jwt_no_email_claim',
+      identityHint: emailHint ? 'Account email was supplied manually during Kiro token import.' : identity.email ? null : 'Kiro refresh token produced no email claim. Re-import after Kiro.dev login if the AWS SSO cache contains a newer token.',
     },
     planName: 'Kiro account',
   };
+}
+
+function normalizeEmailHint(value) {
+  const email = String(value || '').trim().toLowerCase();
+  if (!email) return '';
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
 }
 
 function updateKiroConnectedAccount(accountId, exchange, previousRow = {}) {

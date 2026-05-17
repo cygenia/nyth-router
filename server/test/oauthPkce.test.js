@@ -1,7 +1,7 @@
 import './setup.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPkceSession, deleteConnectedAccount, getConnectedAccessToken, importKiroRefreshToken, listConnectedAccounts, listPkceProviders, setDefaultConnectedAccount, submitCallbackUrl } from '../src/services/oauthPkce.js';
+import { createPkceSession, deleteConnectedAccount, getConnectedAccessToken, importKiroRefreshToken, listConnectedAccounts, listPkceProviders, refreshExpiringAccounts, setDefaultConnectedAccount, submitCallbackUrl } from '../src/services/oauthPkce.js';
 
 test('PKCE provider list exposes CLI localhost callback URLs', () => {
   const providers = listPkceProviders('https://nyth.example.com');
@@ -166,6 +166,34 @@ test('Kiro refresh token import stores an oauth account without exposing raw tok
     assert.equal(result.account.refreshToken, undefined);
     assert.equal(JSON.stringify(result).includes('aorAAAAAG'), false);
     assert.equal(await getConnectedAccessToken('kiro', result.account.id), 'header.' + Buffer.from(JSON.stringify({ email: 'kiro@example.com', sub: 'kiro-subject' })).toString('base64url') + '.sig');
+    db.prepare('DELETE FROM oauth_provider_accounts WHERE id = ?').run(result.account.id);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Kiro refresh token import uses manual email hint as account label metadata', async () => {
+  const { default: db } = await import('../src/db/connection.js');
+  const originalFetch = globalThis.fetch;
+  const accessToken = 'header.' + Buffer.from(JSON.stringify({ sub: 'kiro-subject-no-email' })).toString('base64url') + '.sig';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    accessToken,
+    refreshToken: 'aorAAAAAG-new-refresh-token',
+    profileArn: 'arn:aws:codewhisperer:us-east-1:123:profile/test',
+    expiresIn: 3600,
+  }), { status: 200, headers: { 'content-type': 'application/json' } });
+  try {
+    const result = await importKiroRefreshToken('aorAAAAAG-refresh-token', 'Owner@Example.COM ');
+    assert.equal(result.ok, true);
+    assert.equal(result.account.accountEmail, 'owner@example.com');
+    assert.equal(result.account.accountLabel, 'owner@example.com');
+    const row = db.prepare('SELECT account_email AS email, account_label AS label, oauth_metadata AS metadata FROM oauth_provider_accounts WHERE id = ?').get(result.account.id);
+    assert.equal(row.email, 'owner@example.com');
+    assert.equal(row.label, 'owner@example.com');
+    const metadata = JSON.parse(row.metadata);
+    assert.equal(metadata.manualAccountEmail, 'owner@example.com');
+    assert.equal(metadata.identityDetection, 'manual_email_hint');
+    assert.equal(JSON.stringify(result).includes('aorAAAAAG'), false);
     db.prepare('DELETE FROM oauth_provider_accounts WHERE id = ?').run(result.account.id);
   } finally {
     globalThis.fetch = originalFetch;

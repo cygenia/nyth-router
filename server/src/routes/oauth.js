@@ -35,12 +35,12 @@ dashboard.post('/providers/:provider/callback', async (req, res) => {
 });
 
 dashboard.post('/providers/kiro/import', async (req, res) => {
-  const result = await importKiroRefreshToken(req.body?.refreshToken || '');
+  const result = await importKiroRefreshToken(req.body?.refreshToken || '', req.body?.accountEmail || '');
   res.status(result.ok ? 200 : 400).json(result);
 });
 
 dashboard.post('/providers/kiro/auto-import', async (req, res) => {
-  const result = await autoImportKiroAccount();
+  const result = await autoImportKiroAccount(req.body?.accountEmail || '');
   res.status(result.ok ? 200 : 400).json(result);
 });
 

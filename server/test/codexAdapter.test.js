@@ -79,6 +79,38 @@ test('codex adapter converts chat tools to responses tools and returns one OpenA
   }
 });
 
+test('codex adapter prefixes non-call prior assistant tool IDs for responses input', async () => {
+ const originalFetch = globalThis.fetch;
+ let captured;
+ globalThis.fetch = async (_url, options) => {
+ captured = JSON.parse(options.body);
+ return new Response([
+ 'event: response.completed\n',
+ 'data: {"type":"response.completed", "response":{"id":"resp_final", "status":"completed", "output":[{"type":"message", "content":[{"type":"output_text", "text":"OK"}]}]}}\n\n',
+ ].join(''), { status: 200 });
+ };
+ try {
+ await forwardChat({
+ baseUrl: 'https://chatgpt.com/backend-api/codex',
+ apiKey: 'token',
+ body: {
+ model: 'gpt-5.5',
+ messages: [
+ { role: 'user', content: 'use tool' },
+ { role: 'assistant', content: null, tool_calls: [{ id: 'tooluse_59hi4cP90kxSLXW4RdyT3R', type: 'function', function: { name: 'get_weather', arguments: '{"city":"Jakarta"}' } }] },
+ { role: 'tool', tool_call_id: 'tooluse_59hi4cP90kxSLXW4RdyT3R', content: '{"temp":30}' },
+ ],
+ },
+ });
+ assert.equal(captured.input[1].type, 'function_call');
+ assert.equal(captured.input[1].id, 'fc-59hi4cP90kxSLXW4RdyT3R');
+ assert.equal(captured.input[1].call_id, 'fc-59hi4cP90kxSLXW4RdyT3R');
+ assert.equal(captured.input[2].call_id, 'fc-59hi4cP90kxSLXW4RdyT3R');
+ } finally {
+ globalThis.fetch = originalFetch;
+ }
+});
+
 test('codex adapter converts prior assistant tool calls and tool outputs into responses input', async () => {
   const originalFetch = globalThis.fetch;
   let captured;
@@ -103,10 +135,10 @@ test('codex adapter converts prior assistant tool calls and tool outputs into re
       },
     });
     assert.equal(captured.input[1].type, 'function_call');
-    assert.equal(captured.input[1].id, 'fc_abc');
-    assert.equal(captured.input[1].call_id, 'fc_abc');
+    assert.equal(captured.input[1].id, 'fc-abc');
+    assert.equal(captured.input[1].call_id, 'fc-abc');
     assert.equal(captured.input[2].type, 'function_call_output');
-    assert.equal(captured.input[2].call_id, 'fc_abc');
+    assert.equal(captured.input[2].call_id, 'fc-abc');
     assert.equal(result.data.choices[0].message.content, 'Weather is clear.');
     assert.equal(result.data.choices[0].finish_reason, 'stop');
   } finally {

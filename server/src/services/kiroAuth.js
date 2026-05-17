@@ -150,11 +150,15 @@ function candidateCookieDbPaths() {
     join(home, '.config/chromium'),
     join(home, '.config/microsoft-edge'),
     join(home, '.config/BraveSoftware/Brave-Browser'),
+    join(home, 'snap/chromium/common/chromium'),
   ];
   const profiles = ['Default', 'Profile 1', 'Profile 2', 'Profile 3', 'Profile 4', 'Profile 5'];
   const discovered = [];
   for (const root of roots) {
-    for (const profile of profiles) discovered.push(join(root, profile, 'Network/Cookies'));
+    for (const profile of profiles) {
+      discovered.push(join(root, profile, 'Network/Cookies'));
+      discovered.push(join(root, profile, 'Cookies'));
+    }
   }
   return [...new Set([...explicit, ...discovered])];
 }

@@ -142,6 +142,7 @@ export default function OAuthProviderLoginPage() {
   const [selected, setSelected] = useState('codex');
   const [session, setSession] = useState<OAuthSession | null>(null);
   const [callbackUrl, setCallbackUrl] = useState('');
+  const [kiroAccountEmail, setKiroAccountEmail] = useState('');
   const [kiroRefreshToken, setKiroRefreshToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -211,7 +212,7 @@ export default function OAuthProviderLoginPage() {
     try {
       const result = await api(auto ? '/api/oauth/providers/kiro/auto-import' : '/api/oauth/providers/kiro/import', {
         method: 'POST',
-        body: auto ? JSON.stringify({}) : JSON.stringify({ refreshToken: kiroRefreshToken.trim() }),
+        body: auto ? JSON.stringify({ accountEmail: kiroAccountEmail.trim() }) : JSON.stringify({ refreshToken: kiroRefreshToken.trim(), accountEmail: kiroAccountEmail.trim() }),
       });
       const source = (result as any).sourceType ? ` via ${(result as any).sourceType}` : '';
       toast.push((result as any).ok ? `Kiro account connected${source}. Token encrypted and never shown again.` : 'Kiro import failed.', (result as any).ok ? 'success' : 'error');
@@ -238,7 +239,7 @@ export default function OAuthProviderLoginPage() {
             <p className="mt-2 text-sm text-ink-300">Provider-owned localhost callbacks avoid public redirect issues. Paste the final callback URL back here after login.</p>
             <div className="mt-4 grid gap-2">
               {providers.map((item) => (
-                <button key={item.id} type="button" onClick={() => { setSelected(item.id); setSession(null); setCallbackUrl(''); setKiroRefreshToken(''); }} className={`rounded-3xl border p-3 text-left transition-colors ${selected === item.id ? 'border-aurora-mint/50 bg-aurora-mint/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
+                <button key={item.id} type="button" onClick={() => { setSelected(item.id); setSession(null); setCallbackUrl(''); setKiroAccountEmail(''); setKiroRefreshToken(''); }} className={`rounded-3xl border p-3 text-left transition-colors ${selected === item.id ? 'border-aurora-mint/50 bg-aurora-mint/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
                   <div className="flex items-center gap-3">
                     <ProviderLogo id={providerLogoId[item.id] || item.id} name={item.name} size="sm" />
                     <div className="min-w-0 flex-1">
@@ -272,6 +273,15 @@ export default function OAuthProviderLoginPage() {
                       <div><span className="font-semibold text-ink-100">Auto-detect:</span> reads local browser cookies/cache for app.kiro.dev and stores a safe local cache if found.</div>
                       <div><span className="font-semibold text-ink-100">Local paste:</span> paste only inside this dashboard over the local Nyth session; never paste the token in Telegram/chat.</div>
                     </div>
+                    <label className="mt-3 block text-[10px] uppercase tracking-wider text-aurora-mint">Account email</label>
+                    <input
+                      type="email"
+                      value={kiroAccountEmail}
+                      onChange={(event) => setKiroAccountEmail(event.target.value)}
+                      placeholder="Email pemilik token Kiro, contoh: name@example.com"
+                      className="mt-2 w-full rounded-2xl border border-white/10 bg-ink-950/45 p-3 text-xs text-ink-100 outline-none transition-colors focus:border-aurora-mint/60"
+                    />
+                    <p className="mt-1 text-[11px] text-ink-400">Dipakai sebagai label akun supaya token Kiro mudah dibedakan. Jika JWT token sudah punya email, email ini tetap jadi hint manual.</p>
                     <textarea value={kiroRefreshToken} onChange={(event) => setKiroRefreshToken(event.target.value)} placeholder="Paste Kiro refreshToken locally here — never in chat" className="mt-3 min-h-24 w-full rounded-2xl border border-white/10 bg-ink-950/45 p-3 text-xs text-ink-100 outline-none transition-colors focus:border-aurora-mint/60" />
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button onClick={() => importKiroToken(true)} disabled={submitting} className="btn-primary"><Icons.RefreshCcw className="h-4 w-4" /> {submitting ? 'Detecting...' : 'Auto-detect from browser/cache'}</button>

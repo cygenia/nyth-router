@@ -124,16 +124,25 @@ function contentToText(content) {
 }
 
 function toCodexCallId(id) {
-  const value = String(id || '');
-  if (value.startsWith('fc_')) return value;
-  if (value.startsWith('call_')) return `fc_${value.slice(5)}`;
-  return value || `fc_${randomUUID().replaceAll('-', '')}`;
+  const value = String(id || '').trim();
+  if (value.startsWith('fc-')) return value;
+  if (value.startsWith('fc_')) return `fc-${sanitizeCallIdSuffix(value.slice(3))}`;
+  if (value.startsWith('call_')) return `fc-${sanitizeCallIdSuffix(value.slice(5))}`;
+  if (value.startsWith('tooluse_')) return `fc-${sanitizeCallIdSuffix(value.slice(8))}`;
+  if (value) return `fc-${sanitizeCallIdSuffix(value)}`;
+  return `fc-${randomUUID().replaceAll('-', '')}`;
+}
+
+function sanitizeCallIdSuffix(value) {
+  const sanitized = String(value || '').replace(/[^A-Za-z0-9_-]/g, '');
+  return sanitized || randomUUID().replaceAll('-', '');
 }
 
 function toChatCallId(id) {
   const value = String(id || '');
   if (value.startsWith('call_')) return value;
   if (value.startsWith('fc_')) return `call_${value.slice(3)}`;
+  if (value.startsWith('fc-')) return `call_${value.slice(3)}`;
   return value || `call_${randomUUID().replaceAll('-', '')}`;
 }
 

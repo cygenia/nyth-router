@@ -82,7 +82,7 @@ git --version
 ## Manual installation from terminal
 
 ```bash
-git clone https://github.com/cygenia/nyth-router.git
+git clone https://github.com/spynecora/nyth-router.git
 cd nyth-router
 cp .env.example .env
 ```
@@ -118,7 +118,7 @@ Login with the `NYTH_PASSWORD` you placed in `.env`.
 2. Clone the repository with `Git: Clone`, or open a VS Code terminal and run:
 
    ```bash
-   git clone https://github.com/cygenia/nyth-router.git
+   git clone https://github.com/spynecora/nyth-router.git
    cd nyth-router
    ```
 

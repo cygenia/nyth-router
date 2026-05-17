@@ -49,3 +49,20 @@ logs/
 *.db-shm
 *.db-wal
 *.db-journal
+
+# Security: never commit local diagnostics or sensitive runtime material
+*.secret
+*.secrets
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+*.token
+*.tokens
+*.passphrase
+*.private
+*.secure
+tmp_*
+*_local.*
+*_private.*

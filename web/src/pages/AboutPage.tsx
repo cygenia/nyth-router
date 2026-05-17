@@ -2,7 +2,7 @@ import { Page } from '../components/Page';
 import { Icons } from '../lib/icons';
 
 const version = '0.2.0';
-const githubUrl = 'https://github.com/cygenia/nyth-router';
+const githubUrl = 'https://github.com/spynecora/nyth-router';
 
 export default function AboutPage() {
   return (
@@ -36,7 +36,7 @@ export default function AboutPage() {
               className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-ink-100 transition hover:border-aurora-violet/40 hover:bg-aurora-violet/10"
             >
               <span className="flex items-center gap-2"><Icons.GitBranch className="h-4 w-4 text-aurora-violet" /> GitHub</span>
-              <span className="font-mono text-xs text-ink-300">github.com/cygenia/nyth-router</span>
+              <span className="font-mono text-xs text-ink-300">github.com/spynecora/nyth-router</span>
             </a>
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <div className="flex items-center gap-2 font-semibold text-ink-50"><Icons.BookText className="h-4 w-4 text-aurora-mint" /> Docs</div>
